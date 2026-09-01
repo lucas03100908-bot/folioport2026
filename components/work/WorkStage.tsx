@@ -112,7 +112,7 @@ export default function WorkStage() {
           />
         </div>
 
-        <p className="pointer-events-none shrink-0 pb-7 text-center font-mono text-[10px] tracking-[0.24em] text-faint">
+        <p className="pointer-events-none shrink-0 pb-7 text-center font-mono text-[12px] tracking-[0.18em] text-muted md:text-[10px] md:tracking-[0.24em] md:text-faint">
           SCROLL TO BROWSE
         </p>
       </div>

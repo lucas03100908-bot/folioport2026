@@ -161,13 +161,13 @@ export default function ReelStage() {
         <div className="pointer-events-none absolute inset-x-0 bottom-10 z-10 flex justify-center">
           <span
             data-engine="reel-cue-a"
-            className="engine-driven absolute font-mono text-[10px] tracking-[0.24em] text-muted"
+            className="engine-driven absolute whitespace-nowrap font-mono text-[12px] tracking-[0.18em] text-ink md:text-[10px] md:tracking-[0.24em] md:text-muted"
           >
             SCROLL TO EXPAND
           </span>
           <span
             data-engine="reel-cue-b"
-            className="engine-driven absolute flex items-center gap-3 font-mono text-[10px] tracking-[0.24em] text-accent opacity-0"
+            className="engine-driven absolute flex items-center gap-3 whitespace-nowrap font-mono text-[12px] tracking-[0.18em] text-accent opacity-0 md:text-[10px] md:tracking-[0.24em]"
           >
             KEEP SCROLLING
             <svg width="9" height="16" viewBox="0 0 9 16" aria-hidden>

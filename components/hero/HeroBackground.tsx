@@ -34,7 +34,21 @@ export default function HeroBackground() {
         el.currentTime = 0;
       } else if (view.mobile) {
         el.loop = true;
-        void el.play().catch(() => {});
+        /*
+         * Muted + playsInline is usually enough for autoplay, but phones still
+         * refuse it often enough that a silently caught rejection leaves the
+         * hero frozen on one frame. Retry on the first touch or scroll — by
+         * then the browser counts the page as engaged.
+         */
+        void el.play().catch(() => {
+          const retry = () => {
+            void el.play().catch(() => {});
+          };
+          const opts = { once: true, passive: true } as const;
+          window.addEventListener("touchstart", retry, opts);
+          window.addEventListener("scroll", retry, opts);
+          window.addEventListener("pointerdown", retry, opts);
+        });
       } else {
         // desktop: the film is a timeline that scroll scrubs
         el.loop = false;
@@ -74,14 +88,20 @@ export default function HeroBackground() {
       <video
         ref={v}
         data-engine="hero-bg-video"
-        /* TODO_ASSET — the real hero background film */
         src={HERO_BG_SRC}
         muted
         playsInline
         autoPlay
         loop
         preload="auto"
-        className="absolute inset-0 h-full w-full object-cover"
+        /*
+         * Portrait phones crop a 16:9 film to a sliver — `cover` throws away
+         * about three quarters of this frame and the particle wordmark stops
+         * being readable. `contain` shows the whole composition, and the
+         * letterboxing is invisible because the page behind it is the same
+         * black. Landscape and desktop keep `cover`.
+         */
+        className="absolute inset-0 h-full w-full object-contain md:object-cover"
       />
 
       {/* holds the nav and the copy row legible; the title blends *through* it */}

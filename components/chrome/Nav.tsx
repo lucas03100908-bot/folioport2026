@@ -14,8 +14,18 @@ export default function Nav() {
             Minho
           </a>
           <span className="hidden h-4 w-px bg-white/15 md:block" />
-          {/* mounted once — never unmounts for the whole scroll */}
-          <CategoryBar />
+          {/*
+           * Mounted once — never unmounts for the whole scroll.
+           *
+           * On a 375px screen the four tabs are wider than the bar, and the
+           * last one used to sit off-screen with no way to reach it. The bar
+           * scrolls sideways there instead, snapping to each tab, with the
+           * scrollbar hidden and a fade marking that there is more to the
+           * right.
+           */}
+          <div className="nav-tabs min-w-0 flex-1 overflow-x-auto md:overflow-visible">
+            <CategoryBar />
+          </div>
         </div>
       </div>
       {/* scroll-progress hairline */}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import LiquidTank from "@/components/ui/liquid-tank";
-import { railScrollTo } from "@/components/ScrollEngine";
+import { getLenis, railScrollTo } from "@/components/ScrollEngine";
 import { view } from "@/lib/state";
 
 export type RailItem = {
@@ -43,8 +43,83 @@ export default function RulerCarousel({
   liquid?: boolean;
   onActivate: (index: number) => void;
 }) {
+  const trackRef = useRef<HTMLDivElement>(null);
   const current = () =>
     Math.max(0, Math.min(view.rail.count - 1, Math.round(view.rail.target)));
+
+  /*
+   * Touch: swipe the rail sideways.
+   *
+   * The rail is a horizontal carousel driven by *vertical* page scroll, which
+   * is fine with a wheel but wrong under a thumb — a sideways drag on a row of
+   * cards has to move the row, and on a phone it did nothing at all. This maps
+   * a horizontal drag onto railScrollTo, and stays out of the way of vertical
+   * scrolling: the gesture only claims the touch once it is clearly more
+   * horizontal than vertical, so flicking down the page still works.
+   */
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+
+    let startX = 0;
+    let startY = 0;
+    let dx = 0;
+    let axis: "x" | "y" | null = null;
+    let from = 0;
+
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t) return;
+      startX = t.clientX;
+      startY = t.clientY;
+      dx = 0;
+      axis = null;
+      from = current();
+    };
+
+    const onMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t) return;
+      dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+
+      if (!axis) {
+        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+        axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+        // hand the page back to Lenis if this turned out to be a vertical flick
+        if (axis === "x") getLenis()?.stop();
+      }
+      if (axis !== "x") return;
+      e.preventDefault();
+    };
+
+    const onEnd = () => {
+      const lenis = getLenis();
+      if (axis === "x") {
+        lenis?.start();
+        /* The move is committed here, not during the drag: Lenis treats an
+           in-flight touch as the user driving, and cancels any scrollTo issued
+           mid-gesture — so stepping the rail while the thumb was still down
+           did nothing at all. One card per swipe, more for a long drag. */
+        const perCard = Math.max(90, window.innerWidth * 0.4);
+        const steps = Math.max(-3, Math.min(3, Math.round(-dx / perCard)));
+        if (steps !== 0) railScrollTo(from + steps);
+      }
+      axis = null;
+      dx = 0;
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    el.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -66,10 +141,11 @@ export default function RulerCarousel({
       <Rule />
 
       <div
+        ref={trackRef}
         className={
           tall
-            ? "relative grid h-[64vh] min-h-[440px] place-items-center"
-            : "relative grid h-[54vh] min-h-[360px] place-items-center"
+            ? "relative grid h-[64vh] min-h-[440px] touch-pan-y place-items-center"
+            : "relative grid h-[54vh] min-h-[360px] touch-pan-y place-items-center"
         }
       >
         {items.map((it, i) => (

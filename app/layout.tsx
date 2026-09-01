@@ -24,6 +24,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  /*
+   * Without `width: device-width` a phone lays the page out at 980px and
+   * scales the result down: the hero film reads as though it were zoomed in,
+   * every label shrinks below legibility, and — worst of it — `innerWidth`
+   * reports 980, so `view.mobile` (< 900) never became true and none of the
+   * mobile branches in the engine or the components ever ran.
+   */
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
   themeColor: BASE_HEX,
   colorScheme: "dark",
 };
