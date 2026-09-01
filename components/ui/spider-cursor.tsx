@@ -1,0 +1,282 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
+
+/**
+ * Spiders that walk after a target across a transparent canvas.
+ *
+ * There is no body: the animal is the bundle of strands converging on a point,
+ * drawn in the accent colour.
+ *
+ * The legs are the point: instead of a fixed rig, each spider reaches for
+ * whichever of a few hundred anchor points scattered over the screen happen to
+ * be nearest. Legs therefore come in wildly different lengths, and their feet
+ * are drawn at a radius scaled by distance — that mismatch is what reads as
+ * depth. Every strand is stepped through a cheap noise field so it wavers like
+ * a real leg rather than a ruler line.
+ *
+ * Two things differ from the version this is adapted from, both deliberate:
+ *
+ *   1. **The canvas is cleared, not painted black.** The original fills the
+ *      frame with an opaque black disc every tick, which would bury whatever
+ *      sits behind it — here that is a screen full of links.
+ *   2. **It never takes the pointer.** `pointer-events: none` end to end, so
+ *      anything underneath stays clickable straight through the animal.
+ */
+
+export type SpiderPoint = { x: number; y: number };
+
+export function SpiderCursor({
+  count = 3,
+  active = true,
+  /** called every frame; return where the spiders should head, or null to idle */
+  resolveTarget,
+  /** reports every spider's position each frame, for whatever wants to react */
+  onBodies,
+  /**
+   * Polled each frame. Return a scatter order — where it came from, a rising
+   * `id` so a repeat click re-triggers, and the moment they may regroup.
+   */
+  getScatter,
+  className,
+}: {
+  count?: number;
+  active?: boolean;
+  resolveTarget?: () => SpiderPoint | null;
+  onBodies?: (pts: SpiderPoint[]) => void;
+  getScatter?: () => { x: number; y: number; id: number; until: number } | null;
+  className?: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const targetRef = useRef(resolveTarget);
+  const bodyRef = useRef(onBodies);
+  const scatterRef = useRef(getScatter);
+  targetRef.current = resolveTarget;
+  bodyRef.current = onBodies;
+  scatterRef.current = getScatter;
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    if (!active) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
+    const { sin, cos, PI, hypot, min, max } = Math;
+    const rnd = (x = 1, dx = 0) => Math.random() * x + dx;
+    const clamp = (v: number, lo: number, hi: number) =>
+      v < lo ? lo : v > hi ? hi : v;
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const many = <T,>(n: number, f: (i: number) => T): T[] =>
+      [...Array(n)].map((_, i) => f(i));
+
+    // two crossed sine waves — enough wobble to sell a leg, no library needed
+    const noise = (x: number, y: number, t = 101) =>
+      sin(0.3 * x + 1.4 * t + 2 + 2.5 * sin(0.4 * y + -1.3 * t + 1)) +
+      sin(0.2 * y + 1.5 * t + 2.8 + 2.3 * sin(0.5 * x + -1.2 * t + 0.5));
+
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+
+    const SEGMENTS = 34; // strand smoothness vs. fill rate
+    const RIM = 9; // strands converging on each foot
+    const FEET = 8;
+
+    function drawCircle(x: number, y: number, r: number) {
+      ctx!.beginPath();
+      ctx!.ellipse(x, y, r, r, 0, 0, PI * 2);
+      ctx!.fill();
+    }
+
+    function drawStrand(
+      x0: number,
+      y0: number,
+      x1: number,
+      y1: number,
+      wobble: number,
+    ) {
+      ctx!.beginPath();
+      ctx!.moveTo(x0, y0);
+      for (let i = 1; i <= SEGMENTS; i++) {
+        const f = i / SEGMENTS;
+        const x = lerp(x0, x1, f);
+        const y = lerp(y0, y1, f);
+        const k = noise(x / 5 + x0, y / 5 + y0) * wobble;
+        ctx!.lineTo(x + k, y + k);
+      }
+      ctx!.stroke();
+    }
+
+    function spawn(index: number) {
+      // an anchor field this spider reaches into; density follows the viewport
+      const anchorCount = Math.round(
+        min(300, max(150, (window.innerWidth * window.innerHeight) / 5200)),
+      );
+      const anchors = many(anchorCount, () => ({
+        x: rnd(window.innerWidth),
+        y: rnd(window.innerHeight),
+        len: 0,
+        r: 0,
+      }));
+
+      const rim = many(RIM, (i) => ({
+        x: cos((i / RIM) * PI * 2),
+        y: sin((i / RIM) * PI * 2),
+      }));
+
+      const seed = rnd(100) + index * 40;
+      let x = rnd(window.innerWidth);
+      let y = rnd(window.innerHeight);
+      let tx = x;
+      let ty = y;
+      let flee: SpiderPoint | null = null;
+      let fleeUntil = 0;
+      const kx = rnd(0.5, 0.4);
+      const ky = rnd(0.5, 0.4);
+      // each spider strolls on its own little orbit so the pair never overlaps
+      const walk = { x: rnd(60, 55), y: rnd(60, 55) };
+      // the radius the strands fan out from — larger reads as a bigger animal
+      const R = window.innerWidth / rnd(20, 34);
+
+      return {
+        get pos() {
+          return { x, y };
+        },
+        follow(nx: number, ny: number) {
+          tx = nx;
+          ty = ny;
+        },
+        /** Bolt away from a point, and stay gone until `until`. */
+        scatter(cx: number, cy: number, until: number) {
+          const away = Math.atan2(y - cy, x - cx) + rnd(1.1, -0.55);
+          const far = Math.max(window.innerWidth, window.innerHeight) * 0.75;
+          flee = { x: x + cos(away) * far, y: y + sin(away) * far };
+          fleeUntil = until;
+        },
+        tick(t: number, now: number) {
+          const running = flee !== null && now < fleeUntil;
+          if (!running) flee = null;
+
+          // fleeing skips the stroll wobble and runs flat out
+          const fx = running ? flee!.x : tx + cos(t * kx + seed) * walk.x;
+          const fy = running ? flee!.y : ty + sin(t * ky + seed) * walk.y;
+          const cap = window.innerWidth / (running ? 26 : 90);
+          const ease = running ? 6 : 12;
+          x += min(cap, (fx - x) / ease);
+          y += min(cap, (fy - y) / ease);
+
+          const reach = window.innerWidth / 7;
+          let taken = 0;
+
+          for (const a of anchors) {
+            const len = hypot(a.x - x, a.y - y);
+            const gripping = len < reach && taken < FEET;
+            if (gripping) taken++;
+            a.len = max(0, min(a.len + (gripping ? 0.09 : -0.09), 1));
+            if (!a.len) continue;
+
+            /* Depth. Everything about a strand is driven by how near its foot
+               is: thickness, brightness, how far the foot dot swells and how
+               much the leg wavers. Far legs go thin, dim and straight; near
+               ones go thick, hot and loose. That spread is the whole illusion —
+               a single uniform stroke reads flat no matter how it is animated. */
+            const depth = clamp(1 - len / reach, 0, 1);
+            const grow = a.len * a.len;
+
+            /* No canvas shadow here. `shadowBlur` costs a separate blur pass
+               per stroke, and this loop issues 9 × 8 × 3 = 216 of them a frame —
+               enough to visibly drop the frame rate. The legs carry their own
+               weight through opacity and width instead. */
+            ctx!.lineWidth = lerp(0.6, 3.6, Math.pow(depth, 1.3));
+            ctx!.strokeStyle = `rgba(255,77,28,${(
+              lerp(0.5, 1, Math.pow(depth, 0.9)) * (0.6 + 0.4 * grow)
+            ).toFixed(3)})`;
+
+            const wobble = lerp(0.5, 3.4, depth);
+            for (const p of rim) {
+              drawStrand(
+                lerp(x + p.x * R, a.x, grow),
+                lerp(y + p.y * R, a.y, grow),
+                x + p.x * R,
+                y + p.y * R,
+                wobble,
+              );
+            }
+
+            a.r = lerp(0.6, 5.6, Math.pow(depth, 1.5)) * (gripping ? 1.35 : 1);
+            ctx!.fillStyle = `rgba(255,120,60,${(
+              lerp(0.55, 1, Math.pow(depth, 0.9)) * (0.65 + 0.35 * grow)
+            ).toFixed(3)})`;
+            drawCircle(a.x, a.y, a.r);
+          }
+
+        },
+      };
+    }
+
+    const spiders = many(count, spawn);
+
+    const onPointer = (e: PointerEvent) => {
+      if (targetRef.current) return; // an override owns the target
+      for (const s of spiders) s.follow(e.clientX, e.clientY);
+    };
+    window.addEventListener("pointermove", onPointer, { passive: true });
+
+    let raf = 0;
+    let lastScatter = -1;
+    const frame = (time: number) => {
+      raf = requestAnimationFrame(frame);
+
+      if (w !== window.innerWidth || h !== window.innerHeight) {
+        w = window.innerWidth;
+        h = window.innerHeight;
+        dpr = min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+      }
+
+      const override = targetRef.current?.();
+      if (override) for (const s of spiders) s.follow(override.x, override.y);
+
+      const order = scatterRef.current?.();
+      if (order && order.id !== lastScatter) {
+        lastScatter = order.id;
+        for (const s of spiders) s.scatter(order.x, order.y, order.until);
+      }
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h); // transparent: whatever is behind stays visible
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      const t = time / 1000;
+      for (const s of spiders) s.tick(t, time);
+      bodyRef.current?.(spiders.map((s) => s.pos));
+    };
+    raf = requestAnimationFrame(frame);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pointermove", onPointer);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+  }, [active, count]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className={cn("pointer-events-none block", className)}
+    />
+  );
+}
+
+export default SpiderCursor;

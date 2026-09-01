@@ -1,0 +1,338 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ theme */
+@theme {
+  --color-base: #000000;
+  --color-ink: #f2f2f2;
+  --color-muted: #8a8a8a;
+  --color-faint: #4a4a4a;
+  --color-hair: rgba(255, 255, 255, 0.12);
+  --color-accent: #ff4d1c;
+  --color-accent-soft: rgba(255, 77, 28, 0.16);
+
+  /* Display type — Fiona (Adobe Fonts). Loads only once NEXT_PUBLIC_TYPEKIT_ID
+     is set; until then the fallbacks below carry the same high-contrast,
+     Didone-ish character. */
+  --font-display: fiona, "Didot", "Bodoni 72", "Playfair Display", Georgia,
+    "Times New Roman", serif;
+  /* UI / body — the labels, tag rows and nav stay a neutral grotesque. */
+  --font-ui: "Helvetica Neue", "Pretendard", "Inter", system-ui, -apple-system,
+    "Apple SD Gothic Neo", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --nav-h: 64px;
+}
+
+/* --------------------------------------------------------------- base --- */
+:root {
+  /* mirrored from lib/theme.ts — Canvas clear colour uses the same value,
+     so there is no flash between the DOM paint and the first WebGL frame. */
+  --base: #000000;
+  color-scheme: dark;
+}
+
+html {
+  background: var(--base);
+}
+
+body {
+  background: var(--base);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+/* Lenis owns the scroll; these are its required hooks. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #000;
+}
+
+/* Custom cursor takes over on fine pointers. */
+@media (pointer: fine) {
+  html.has-cursor,
+  html.has-cursor * {
+    cursor: none;
+  }
+}
+
+/* ---------------------------------------------------------- typography --- */
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.eyebrow-dim {
+  color: var(--color-muted);
+}
+/* Larger eyebrow for the rail cards. It has to be a class rather than a
+   Tailwind size utility: `.eyebrow` is defined here, *after* the utilities, so
+   at equal specificity it wins on source order and a `text-[13px]` is ignored. */
+.eyebrow-lg {
+  font-size: 0.8125rem;
+  letter-spacing: 0.24em;
+}
+
+.tagrow {
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+}
+.tagrow > span + span::before {
+  content: "/";
+  margin: 0 0.55em;
+  color: var(--color-accent);
+  opacity: 0.75;
+}
+
+.hair {
+  height: 1px;
+  background: var(--color-hair);
+}
+
+/* Radial scrim keeps copy legible over the 3D background when the split
+   layouts fold into one centred column. */
+.scrim {
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 50%,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.45) 42%,
+    rgba(0, 0, 0, 0.12) 72%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+/* spec-sheet dotted key/value row */
+.dotted {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+.dotted::after {
+  content: "";
+  flex: 1 1 auto;
+  order: 1;
+  height: 0;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.22);
+  transform: translateY(-0.25em);
+}
+.dotted > :first-child {
+  order: 0;
+}
+.dotted > :last-child {
+  order: 2;
+}
+
+/* The word the spider is standing on. Colour only — the engine owns these
+   elements' inline opacity for the pulse, and inline always wins. */
+[data-spider-near] {
+  color: var(--color-accent) !important;
+  text-shadow: 0 0 26px var(--color-accent-soft);
+}
+
+/* ------------------------------------------------------- connect depth --- */
+/* The far copy of the link field: pushed back with a gaussian blur so the
+   screen reads as depth rather than a flat wall of type. */
+.connect-far {
+  filter: blur(3.5px) saturate(0.85);
+}
+
+/* The near copy: identical geometry, lit and in focus, but visible only inside
+   the two soft circles the spiders carry. <Spider/> writes --sx1/--sy1 and
+   --sx2/--sy2 every other frame; the radii stay in CSS so the mask can be
+   rasterised without re-parsing a gradient string each time. */
+.connect-near {
+  --sx1: -999px;
+  --sy1: -999px;
+  --sx2: -999px;
+  --sy2: -999px;
+  --sx3: -999px;
+  --sy3: -999px;
+  --slight: 300px;
+  will-change: mask-image;
+  -webkit-mask-image:
+    radial-gradient(
+      circle var(--slight) at var(--sx1) var(--sy1),
+      #000 0%,
+      rgba(0, 0, 0, 0.72) 42%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle var(--slight) at var(--sx2) var(--sy2),
+      #000 0%,
+      rgba(0, 0, 0, 0.72) 42%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle var(--slight) at var(--sx3) var(--sy3),
+      #000 0%,
+      rgba(0, 0, 0, 0.72) 42%,
+      transparent 72%
+    );
+  mask-image:
+    radial-gradient(
+      circle var(--slight) at var(--sx1) var(--sy1),
+      #000 0%,
+      rgba(0, 0, 0, 0.72) 42%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle var(--slight) at var(--sx2) var(--sy2),
+      #000 0%,
+      rgba(0, 0, 0, 0.72) 42%,
+      transparent 72%
+    ),
+    radial-gradient(
+      circle var(--slight) at var(--sx3) var(--sy3),
+      #000 0%,
+      rgba(0, 0, 0, 0.72) 42%,
+      transparent 72%
+    );
+  text-shadow: 0 0 34px var(--color-accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connect-far {
+    filter: none;
+  }
+  .connect-near {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------- liquid tank --- */
+.liquid-tank {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  cursor: pointer;
+  background: #0a0a0c;
+  border-radius: 20px;
+  box-shadow:
+    0 26px 60px -24px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  transition: box-shadow 0.35s ease-out;
+}
+.liquid-tank:hover {
+  box-shadow:
+    0 34px 80px -26px rgba(0, 0, 0, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+/* the card that rides the rule */
+.rail-tank {
+  width: min(76vw, 990px);
+  height: clamp(320px, 48vh, 460px);
+}
+
+/* the chooser holds three cards and nothing else, so they can stand taller */
+.rail-tank-tall {
+  height: clamp(400px, 58vh, 545px);
+}
+
+@media (max-width: 900px) {
+  .rail-tank {
+    width: 88vw;
+    height: 320px;
+  }
+  .rail-tank-tall {
+    height: 380px;
+  }
+}
+
+/* -------------------------------------------------------------- glass --- */
+/* Frosted surfaces, used only where a panel sits over moving footage and needs
+   to separate from it: the nav, the work cards, the detail panel. Kept off
+   full-screen layers — `backdrop-filter` over a playing video is expensive. */
+.glass {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.055),
+    rgba(255, 255, 255, 0.018)
+  );
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 24px 70px -34px rgba(0, 0, 0, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.085);
+}
+
+/* A brighter rim for surfaces that need to feel lit rather than merely dark. */
+.glass-rim {
+  position: relative;
+}
+.glass-rim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0) 38%,
+    rgba(255, 255, 255, 0) 72%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(10, 10, 12, 0.92);
+  }
+}
+
+/* --------------------------------------------------------------- misc --- */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Elements the ScrollEngine writes to must not fight CSS transitions. */
+.engine-driven {
+  will-change: opacity, transform, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
