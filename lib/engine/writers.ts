@@ -28,8 +28,10 @@ export type FrameContext = {
   vw: number;
   /** seconds since the previous frame, clamped */
   dt: number;
-  /** true on the ~30fps beat that video seeking is throttled to */
-  seek: boolean;
+  /**
+   * Put a paused film at a fraction of itself. Called every frame — it eases
+   * towards the fraction internally and throttles its own seeking.
+   */
   scrub: (v: HTMLVideoElement | null, p: number) => void;
   stageLocal: (name: StageName) => number;
 };
@@ -54,7 +56,7 @@ export function writePanels({ nodes, reduced }: FrameContext) {
 
 /** Hero: a slow dolly on the film, and a 3–4° pointer tilt on the title. */
 export function writeHero(c: FrameContext) {
-  const { nodes, reduced, stageLocal, seek, scrub } = c;
+  const { nodes, reduced, stageLocal, scrub } = c;
   const heroP = stageLocal("hero");
 
   if (nodes.heroBg && !reduced) {
@@ -77,7 +79,7 @@ export function writeHero(c: FrameContext) {
   }
 
   // the film advances (and rewinds) with the wheel across the hero well
-  if (seek) scrub(nodes.heroBgVideo, heroP);
+  scrub(nodes.heroBgVideo, heroP);
 }
 
 /** Work: the chooser's tiles, then the measuring-rule carousel. */

@@ -22,6 +22,7 @@ import {
   type StageName,
   clamp,
   damp,
+  lerp,
   norm,
   readEnvironment,
   view,
@@ -80,6 +81,30 @@ export function stageLocal(name: StageName) {
 /** currentTime writes are throttled to ~30fps — seeking every frame stutters. */
 const SEEK_INTERVAL = 33;
 
+/**
+ * Fraction of the remaining gap the film closes on each seek beat.
+ *
+ * Deliberately per *beat* and not per second. Easing on wall-clock time reads
+ * the real frame delta, so one long frame becomes one long jump of the
+ * playhead — the follower then amplifies a stutter instead of absorbing it.
+ * The seeks are what the viewer actually sees, so the easing is spread evenly
+ * across those: every step is the same fraction of what is left, whatever the
+ * frame rate is doing. ~0.22 at 30Hz settles in about a seventh of a second.
+ */
+const SCRUB_CATCHUP = 0.22;
+
+/**
+ * Beyond this much of the film in one go, the gap is closed at once.
+ *
+ * Only genuine jumps — an anchor, a restored scroll position — should land
+ * here. It has to sit well above the lag a fast wheel builds up, or the
+ * follower snaps mid-scroll and produces the very jump it exists to avoid.
+ */
+const SCRUB_SNAP = 0.6;
+
+/** Half a video frame: seeking finer than this decodes without showing. */
+const SCRUB_EPSILON = 1 / 60;
+
 export default function ScrollEngine() {
   useEffect(() => {
     readEnvironment();
@@ -125,12 +150,36 @@ export default function ScrollEngine() {
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
 
-    /** Paused video + scroll = timeline. Throttled, and never on mobile. */
+    /* Paused video + scroll = timeline. Never on mobile, where the film loops
+       on its own clock instead. */
+    let canSeek = false;
+    /** each scrubbed film's own eased position through itself, 0..1 */
+    const scrubbed = new WeakMap<HTMLVideoElement, number>();
+
     const scrub = (v: HTMLVideoElement | null, p: number) => {
-      if (!v || view.mobile || view.reduced) return;
+      if (!v || view.mobile || view.reduced || !canSeek) return;
       if (v.readyState < 1 || !v.duration || !Number.isFinite(v.duration)) return;
-      const t = clamp(p) * (v.duration - 0.05);
-      if (Math.abs(v.currentTime - t) > 1 / 30) v.currentTime = t;
+
+      const target = clamp(p);
+      const prev = scrubbed.get(v);
+
+      /* The film chases the scroll rather than being nailed to it.
+         Scroll arrives in uneven steps — a wheel notch is a jump, and Lenis's
+         easing is on the page, not on the timeline — so seeking straight to it
+         lands the playhead at visibly uneven intervals, which is the stutter.
+         A damped follower hands over the same frames at an even rate, and it
+         keeps closing the gap for a moment after the scroll stops.
+
+         A large jump is not eased: an anchor or a restored position would
+         otherwise run a quarter of the reel past at speed. */
+      const eased =
+        prev === undefined || Math.abs(target - prev) > SCRUB_SNAP
+          ? target
+          : lerp(prev, target, SCRUB_CATCHUP);
+      scrubbed.set(v, eased);
+
+      const t = eased * (v.duration - 0.05);
+      if (Math.abs(v.currentTime - t) > SCRUB_EPSILON) v.currentTime = t;
     };
 
     /* ----------------------------------------------------------- frame -- */
@@ -188,8 +237,8 @@ export default function ScrollEngine() {
       view.pointer.ex = damp(view.pointer.ex, view.pointer.x, lam, dt);
       view.pointer.ey = damp(view.pointer.ey, view.pointer.y, lam, dt);
 
-      const seek = time * 1000 - lastSeek > SEEK_INTERVAL;
-      if (seek) lastSeek = time * 1000;
+      canSeek = time * 1000 - lastSeek > SEEK_INTERVAL;
+      if (canSeek) lastSeek = time * 1000;
 
       const frame: FrameContext = {
         nodes,
@@ -197,7 +246,6 @@ export default function ScrollEngine() {
         vh,
         vw: window.innerWidth,
         dt,
-        seek,
         scrub,
         stageLocal,
       };
