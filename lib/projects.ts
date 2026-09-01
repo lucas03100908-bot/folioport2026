@@ -113,22 +113,6 @@ export const BASE_PROJECTS: Project[] = [
     thumbnail: "/thumbs/fluid-audioreactive.webp",
     projectUrl: "https://www.youtube.com/watch?v=hoU5xjEDC1c",
   },
-  {
-    id: "ar-pj-1",
-    category: "motion",
-    title: "AR PJ 1",
-    eyebrow: "3D Visual Study",
-    year: "2026",
-    role: "3D 비주얼 / 모션 디자인",
-    tools: "Blender",
-    type: "3D 비주얼 실험",
-    blurb: "공간감과 무드 연출에 집중한 짧은 시네마틱 3D 장면.",
-    summary:
-      "유튜브에 공개한 3D 비주얼 실험 작업. 공간감과 무드 연출에 집중해 짧은 시네마틱 장면을 구성한 모션 프로젝트입니다.",
-    tags: ["MOTION", "3D", "CINEMATIC"],
-    thumbnail: "/thumbs/ar-pj-1.webp",
-    projectUrl: "https://www.youtube.com/watch?v=V-QcXbkdlkQ",
-  },
   /* ---------------------------------------------------- motion (7) --- */
   {
     id: "bloom",
@@ -241,6 +225,22 @@ export const BASE_PROJECTS: Project[] = [
     tags: ["MOTION", "3D", "TYPE"],
     thumbnail: "/thumbs/hanja-graffiti.webp",
     projectUrl: "https://www.threads.com/share/F-xdEMUCq/",
+  },
+  {
+    id: "ar-pj-1",
+    category: "motion",
+    title: "AR PJ 1",
+    eyebrow: "3D Visual Study",
+    year: "2026",
+    role: "3D 비주얼 / 모션 디자인",
+    tools: "Blender",
+    type: "3D 비주얼 실험",
+    blurb: "공간감과 무드 연출에 집중한 짧은 시네마틱 3D 장면.",
+    summary:
+      "유튜브에 공개한 3D 비주얼 실험 작업. 공간감과 무드 연출에 집중해 짧은 시네마틱 장면을 구성한 모션 프로젝트입니다.",
+    tags: ["MOTION", "3D", "CINEMATIC"],
+    thumbnail: "/thumbs/ar-pj-1.webp",
+    projectUrl: "https://www.youtube.com/watch?v=V-QcXbkdlkQ",
   },
   /* ---------------------------------------------------- ux (3) --- */
   {
