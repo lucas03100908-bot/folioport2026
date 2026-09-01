@@ -203,7 +203,7 @@ export function writeConnect({ nodes, reduced }: FrameContext) {
   }
 }
 
-/** Progress hairline, stage rail and the cursor reticle. */
+/** Progress hairline and the stage rail. */
 export function writeChrome({ nodes }: FrameContext) {
   if (nodes.progressBar)
     nodes.progressBar.style.transform = `scaleX(${view.progress})`;
@@ -213,12 +213,6 @@ export function writeChrome({ nodes }: FrameContext) {
     const on = view.section === i;
     t.style.opacity = String(on ? 1 : 0.3);
     t.style.transform = `scaleX(${on ? 1 : 0.42})`;
-  }
-
-  if (nodes.cursor && view.pointer.active) {
-    nodes.cursor.style.transform =
-      `translate3d(${view.pointer.epx}px, ${view.pointer.epy}px, 0) ` +
-      `translate(-50%,-50%)`;
   }
 }
 

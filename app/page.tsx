@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import ScrollEngine from "@/components/ScrollEngine";
 import Nav from "@/components/chrome/Nav";
-import Cursor from "@/components/chrome/Cursor";
 import Preloader from "@/components/chrome/Preloader";
 import ProgressRail from "@/components/chrome/ProgressRail";
 import Footer from "@/components/chrome/Footer";
@@ -47,7 +46,6 @@ export default function Page() {
       <Preloader />
       <Nav />
       <ProgressRail />
-      <Cursor />
 
       {/* `main` is z-10 and spans the document, so on the connect screen it sat
           on top of the link field and swallowed every click meant for it. It

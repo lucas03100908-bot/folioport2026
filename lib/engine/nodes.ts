@@ -46,7 +46,6 @@ export type EngineNodes = {
   /* chrome */
   progressBar: HTMLElement | null;
   railTicks: HTMLElement[];
-  cursor: HTMLElement | null;
 };
 
 export const EMPTY_NODES: EngineNodes = {
@@ -67,7 +66,6 @@ export const EMPTY_NODES: EngineNodes = {
   connectWords: [],
   progressBar: null,
   railTicks: [],
-  cursor: null,
 };
 
 /** Re-read every tagged node. Called on layout changes, never per frame. */
@@ -104,6 +102,5 @@ export function collectNodes(): EngineNodes {
 
     progressBar: one('[data-engine="progress"]'),
     railTicks: all('[data-engine="rail-tick"]'),
-    cursor: one('[data-engine="cursor"]'),
   };
 }

@@ -177,8 +177,6 @@ export default function ScrollEngine() {
       const lam = view.reduced ? 40 : 6;
       view.pointer.ex = damp(view.pointer.ex, view.pointer.x, lam, dt);
       view.pointer.ey = damp(view.pointer.ey, view.pointer.y, lam, dt);
-      view.pointer.epx = damp(view.pointer.epx, view.pointer.px, 11, dt);
-      view.pointer.epy = damp(view.pointer.epy, view.pointer.py, 11, dt);
 
       const seek = time * 1000 - lastSeek > SEEK_INTERVAL;
       if (seek) lastSeek = time * 1000;

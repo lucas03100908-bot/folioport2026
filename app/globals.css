@@ -62,14 +62,6 @@ html.lenis body {
   color: #000;
 }
 
-/* Custom cursor takes over on fine pointers. */
-@media (pointer: fine) {
-  html.has-cursor,
-  html.has-cursor * {
-    cursor: none;
-  }
-}
-
 /* ---------------------------------------------------------- typography --- */
 .display {
   font-family: var(--font-display);

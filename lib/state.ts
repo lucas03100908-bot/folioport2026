@@ -89,9 +89,6 @@ export const view = {
     /** raw pixels, for the cursor reticle */
     px: 0,
     py: 0,
-    /** eased pixels */
-    epx: 0,
-    epy: 0,
     active: false,
   },
 
