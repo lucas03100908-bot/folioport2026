@@ -50,11 +50,21 @@ export function scrollToStage(name: StageName, smooth = true) {
  * truth and the back/forward buttons still work.
  */
 export function railScrollTo(i: number) {
+  const n = Math.max(1, view.rail.count - 1);
+  const target = clamp(i, 0, n);
+
+  /* On a phone the rail is not on the page's scrollbar at all — the work stage
+     is one screen tall and the thumb walks the cards — so stepping it is a
+     change of index, not a scroll. The spring animates the rest. */
+  if (view.mobile) {
+    view.rail.manual = target;
+    return;
+  }
+
   const b = view.bounds.work;
   const vh = typeof window === "undefined" ? 1 : window.innerHeight;
   const span = Math.max(b.height - vh, 1);
-  const n = Math.max(1, view.rail.count - 1);
-  const y = b.top + (clamp(i, 0, n) / n) * span;
+  const y = b.top + (target / n) * span;
   if (lenisRef) lenisRef.scrollTo(y);
   else window.scrollTo({ top: y, behavior: "smooth" });
 }

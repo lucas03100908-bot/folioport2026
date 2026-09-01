@@ -352,3 +352,23 @@ html.lenis body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/*
+ * The work stage is a scroll well on a pointer: its extra height is what page
+ * scroll spends walking the rail. A phone has no spare axis for that — its one
+ * gesture is vertical and the page needs it — so there the stage is a single
+ * screen and the rail is walked sideways by the thumb instead. 899px is the
+ * same line as `view.mobile`, which is what the engine branches on.
+ */
+.work-well {
+  height: calc(100svh + var(--well));
+}
+@media (max-width: 899px) {
+  /* Not one flat screen: a short well so the stage stays pinned for about half
+     a scroll while the cards are being swiped, instead of sliding out from
+     under the thumb the instant the page moves at all. It no longer scales
+     with the item count — nothing here walks the rail. */
+  .work-well {
+    height: calc(100svh + 60vh);
+  }
+}

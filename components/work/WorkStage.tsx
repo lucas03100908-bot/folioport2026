@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, type CSSProperties } from "react";
 import {
   CATEGORIES,
   CATEGORY_TINT,
@@ -8,6 +8,7 @@ import {
   projectsFor,
   type CategoryId,
 } from "@/lib/content";
+import { view } from "@/lib/state";
 import RulerCarousel, { type RailItem } from "./RulerCarousel";
 import { useWork } from "./WorkProvider";
 
@@ -49,6 +50,8 @@ export default function WorkStage() {
 
   // the well's height follows the item count — the engine must re-measure
   useLayoutEffect(() => {
+    // a new set of cards always starts on the first one (mobile's rail input)
+    view.rail.manual = 0;
     window.dispatchEvent(new CustomEvent("minho:layout"));
   }, [category]);
 
@@ -65,8 +68,8 @@ export default function WorkStage() {
   return (
     <section
       data-stage="work"
-      className="pointer-events-auto relative w-full"
-      style={{ height: `calc(100svh + ${items.length * VH_PER_ITEM}vh)` }}
+      className="work-well pointer-events-auto relative w-full"
+      style={{ "--well": `${items.length * VH_PER_ITEM}vh` } as CSSProperties}
     >
       <div className="sticky top-0 flex h-svh w-full flex-col overflow-hidden">
         <header className="shrink-0 px-5 pt-[calc(var(--nav-h)+4vh)] md:px-12">
@@ -113,7 +116,9 @@ export default function WorkStage() {
         </div>
 
         <p className="pointer-events-none shrink-0 pb-7 text-center font-mono text-[12px] tracking-[0.18em] text-muted md:text-[10px] md:tracking-[0.24em] md:text-faint">
-          SCROLL TO BROWSE
+          {/* the gesture differs by pointer, so the cue has to as well */}
+          <span className="max-[899px]:hidden">SCROLL TO BROWSE</span>
+          <span className="min-[900px]:hidden">SWIPE TO BROWSE</span>
         </p>
       </div>
     </section>

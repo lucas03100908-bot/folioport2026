@@ -96,11 +96,18 @@ export const view = {
   velocity: 0,
 
   /**
-   * The project rail. `target` is where scroll says we are; `pos` is a spring
-   * chasing it, so the names settle with a little overshoot instead of being
-   * nailed to the scrollbar.
+   * The project rail. `target` is where the input says we are; `pos` is a
+   * spring chasing it, so the names settle with a little overshoot instead of
+   * being nailed to the scrollbar.
+   *
+   * Two inputs, one per pointer. With a wheel the rail rides page scroll, so
+   * the scrollbar keeps telling the truth. Under a thumb it cannot: a phone
+   * has one gesture for scrolling and it belongs to the page, so there the
+   * rail is driven sideways and `manual` — a fractional card index — is the
+   * target instead. `dragging` stiffens the spring so the cards track the
+   * finger rather than trailing it.
    */
-  rail: { pos: 0, target: 0, vel: 0, count: 0 },
+  rail: { pos: 0, target: 0, vel: 0, count: 0, manual: 0, dragging: false },
 
   /* environment */
   mobile: false,
@@ -114,6 +121,14 @@ export const view = {
 
 /** Below this the split layouts fold and video scrubbing is swapped for loop. */
 export const MOBILE_BREAKPOINT = 900;
+
+/**
+ * Centre-to-centre distance between two rail cards. Both the writer that lays
+ * the cards out and the swipe handler that moves them need it, and they have
+ * to agree or a drag will not track the finger.
+ */
+export const railStride = (vw = window.innerWidth) =>
+  vw * (view.mobile ? 0.94 : 0.78);
 
 export function readEnvironment() {
   if (typeof window === "undefined") return;

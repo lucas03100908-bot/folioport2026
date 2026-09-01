@@ -10,7 +10,14 @@
  * called in a fixed order, once per frame, from <ScrollEngine/>.
  */
 
-import { clamp, lerp, smoothstep, type StageName, view } from "@/lib/state";
+import {
+  clamp,
+  lerp,
+  railStride,
+  smoothstep,
+  type StageName,
+  view,
+} from "@/lib/state";
 import type { EngineNodes } from "./nodes";
 
 export type FrameContext = {
@@ -91,7 +98,11 @@ export function writeWork(c: FrameContext) {
 
   const rail = view.rail;
   rail.count = railN;
-  rail.target = stageLocal("work") * Math.max(0, railN - 1);
+  const last = Math.max(0, railN - 1);
+  /* Where the rail wants to be. On a phone that is wherever the last swipe
+     left it — the stage is a single screen there and vertical scroll belongs
+     to the page — and everywhere else it is a read of the scroll well. */
+  rail.target = view.mobile ? clamp(rail.manual, 0, last) : stageLocal("work") * last;
 
   /* A damped spring, integrated per frame, rather than reading the scroll
      position straight. Scroll sets where the rail *wants* to be; the mass takes
@@ -102,16 +113,19 @@ export function writeWork(c: FrameContext) {
     rail.pos = rail.target;
     rail.vel = 0;
   } else {
-    const K = 190; // stiffness
-    const C = 26; // damping
+    /* Loose enough to overshoot when something else is pushing the rail;
+       stiff and critically damped while a finger is on it, because a card that
+       trails the thumb reads as lag rather than as weight. */
+    const K = rail.dragging ? 900 : 190; // stiffness
+    const C = rail.dragging ? 60 : 26; // damping
     const a = (rail.target - rail.pos) * K - rail.vel * C;
     rail.vel += a * dt;
     rail.pos += rail.vel * dt;
   }
 
   const pos = rail.pos;
-  const stride = vw * (view.mobile ? 0.94 : 0.78);
-  const current = clamp(Math.round(pos), 0, railN - 1);
+  const stride = railStride(vw);
+  const current = clamp(Math.round(pos), 0, last);
 
   for (const el of nodes.railItems) {
     const i = Number(el.dataset.index || 0);

@@ -3,7 +3,10 @@
 import { useEffect, useRef } from "react";
 import LiquidTank from "@/components/ui/liquid-tank";
 import { getLenis, railScrollTo } from "@/components/ScrollEngine";
-import { view } from "@/lib/state";
+import { clamp, railStride, view } from "@/lib/state";
+
+/** when the last horizontal drag moved the rail, so a tap can be told apart */
+let swipedAt = 0;
 
 export type RailItem = {
   key: string;
@@ -47,15 +50,25 @@ export default function RulerCarousel({
   const current = () =>
     Math.max(0, Math.min(view.rail.count - 1, Math.round(view.rail.target)));
 
+  const press = (i: number) => {
+    // a swipe that ends over a card must not also open it
+    if (Date.now() - swipedAt < 350) return;
+    if (i === current()) onActivate(i);
+    else railScrollTo(i);
+  };
+
   /*
-   * Touch: swipe the rail sideways.
+   * Touch: the rail is walked sideways.
    *
-   * The rail is a horizontal carousel driven by *vertical* page scroll, which
-   * is fine with a wheel but wrong under a thumb — a sideways drag on a row of
-   * cards has to move the row, and on a phone it did nothing at all. This maps
-   * a horizontal drag onto railScrollTo, and stays out of the way of vertical
-   * scrolling: the gesture only claims the touch once it is clearly more
-   * horizontal than vertical, so flicking down the page still works.
+   * On a pointer the rail rides page scroll, which is right — the wheel has a
+   * spare axis and the scrollbar keeps telling the truth. A phone has no spare
+   * axis: its one gesture is vertical and it belongs to the page. So here the
+   * cards follow the thumb instead, tracking it one-to-one during the drag and
+   * snapping to the nearest card on release, with a flick carrying further.
+   * `view.rail.manual` is the target the writer reads in this mode.
+   *
+   * The gesture only claims the touch once it is clearly more horizontal than
+   * vertical, so a flick down the page still scrolls past the stage.
    */
   useEffect(() => {
     const el = trackRef.current;
@@ -63,50 +76,73 @@ export default function RulerCarousel({
 
     let startX = 0;
     let startY = 0;
-    let dx = 0;
-    let axis: "x" | "y" | null = null;
     let from = 0;
+    let lastX = 0;
+    let lastT = 0;
+    let vx = 0; // px per ms, signed
+    let axis: "x" | "y" | null = null;
 
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
       if (!t) return;
-      startX = t.clientX;
+      startX = lastX = t.clientX;
       startY = t.clientY;
-      dx = 0;
+      lastT = e.timeStamp;
+      vx = 0;
       axis = null;
-      from = current();
+      from = view.rail.manual;
     };
 
     const onMove = (e: TouchEvent) => {
       const t = e.touches[0];
       if (!t) return;
-      dx = t.clientX - startX;
+      const dx = t.clientX - startX;
       const dy = t.clientY - startY;
 
       if (!axis) {
-        if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
-        axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
-        // hand the page back to Lenis if this turned out to be a vertical flick
-        if (axis === "x") getLenis()?.stop();
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        // desktop keeps its scroll-driven rail even on a touchscreen
+        axis = view.mobile && Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+        if (axis === "x") {
+          view.rail.dragging = true;
+          /* Lenis would otherwise keep animating the page underneath the
+             gesture and drag the whole stage away mid-swipe. */
+          getLenis()?.stop();
+        }
       }
       if (axis !== "x") return;
       e.preventDefault();
+
+      const dt = e.timeStamp - lastT;
+      if (dt > 0) {
+        vx = (t.clientX - lastX) / dt;
+        lastX = t.clientX;
+        lastT = e.timeStamp;
+      }
+
+      const end = Math.max(0, view.rail.count - 1);
+      let next = from - dx / railStride();
+      // past either end the rail gives, but only a third as far
+      if (next < 0) next *= 0.35;
+      else if (next > end) next = end + (next - end) * 0.35;
+      view.rail.manual = next;
+      swipedAt = Date.now();
     };
 
     const onEnd = () => {
-      const lenis = getLenis();
       if (axis === "x") {
-        lenis?.start();
-        /* The move is committed here, not during the drag: Lenis treats an
-           in-flight touch as the user driving, and cancels any scrollTo issued
-           mid-gesture — so stepping the rail while the thumb was still down
-           did nothing at all. One card per swipe, more for a long drag. */
-        const perCard = Math.max(90, window.innerWidth * 0.4);
-        const steps = Math.max(-3, Math.min(3, Math.round(-dx / perCard)));
-        if (steps !== 0) railScrollTo(from + steps);
+        view.rail.dragging = false;
+        getLenis()?.start();
+        const end = Math.max(0, view.rail.count - 1);
+        /* A flick carries: velocity in px/ms becomes up to a card of extra
+           travel, so a fast short swipe still advances while a slow, short one
+           settles back where it started. */
+        const carry = clamp(-vx * 0.3, -1, 1);
+        view.rail.manual = clamp(Math.round(view.rail.manual + carry), 0, end);
+        swipedAt = Date.now();
       }
       axis = null;
-      dx = 0;
+      vx = 0;
     };
 
     el.addEventListener("touchstart", onStart, { passive: true });
@@ -160,7 +196,7 @@ export default function RulerCarousel({
               still={it.still}
               liquid={liquid}
               className={tall ? "rail-tank rail-tank-tall" : "rail-tank"}
-              onClick={() => (i === current() ? onActivate(i) : railScrollTo(i))}
+              onClick={() => press(i)}
             >
               <span className="flex items-start justify-between gap-6">
                 <span className="eyebrow eyebrow-lg text-white/75">
