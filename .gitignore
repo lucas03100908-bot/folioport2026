@@ -7,3 +7,5 @@ next-env.d.ts
 
 # local-only studio state
 .env.local
+.vercel
+.env*

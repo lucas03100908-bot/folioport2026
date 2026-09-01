@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import ScrollEngine from "@/components/ScrollEngine";
 import Nav from "@/components/chrome/Nav";
 import Cursor from "@/components/chrome/Cursor";
@@ -9,11 +10,26 @@ import Footer from "@/components/chrome/Footer";
 import Hero from "@/components/hero/Hero";
 import WorkProvider from "@/components/work/WorkProvider";
 import WorkStage from "@/components/work/WorkStage";
-import ProjectDetail from "@/components/work/ProjectDetail";
 import ReelStage from "@/components/reel/ReelStage";
 import ConnectStage from "@/components/connect/ConnectStage";
 import ConnectField from "@/components/connect/ConnectField";
-import Spider from "@/components/connect/Spider";
+
+/**
+ * Deferred so their weight stays out of the first load. Neither is on screen
+ * when the page opens — the spiders belong to the last stage, and the detail
+ * panel only exists once a project is opened — so fetching their code with the
+ * hero costs the visitor time for nothing.
+ *
+ * `ssr: false` on the spiders because they are a canvas driven by pointer and
+ * gyroscope: there is no server-rendered form of them to hydrate.
+ */
+const Spider = dynamic(() => import("@/components/connect/Spider"), {
+  ssr: false,
+});
+const ProjectDetail = dynamic(
+  () => import("@/components/work/ProjectDetail"),
+  { ssr: false },
+);
 
 export default function Page() {
   return (
