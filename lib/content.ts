@@ -3,8 +3,8 @@
  *
  * Copy transcribed from Port_Ho_2026.pdf — 역할 / 도구 / 유형 / 요약 map to
  * `role` / `tools` / `type` / `blurb`, and the page's body paragraphs to
- * `summary`. The only stubs left are `projectUrl` (search `TODO_URL`); add
- * those from /studio rather than by hand.
+ * `summary`. Copy, links and stills are all in place; anything added later can
+ * go through /studio rather than by hand.
  */
 
 import rawOverrides from "./project-overrides.json";
@@ -52,7 +52,7 @@ export type Project = {
   tags: string[];
   /** Still shown on the card and in the detail panel. Swap from /studio. */
   thumbnail: string;
-  /** TODO_URL — where the "View Project" button goes */
+  /** where the "View Project" button goes; TODO_URL means "no link yet" */
   projectUrl: string;
 };
 
@@ -393,12 +393,12 @@ export const CONTACT: [string, string][] = [
   ["Name", "Kim Minho / 김민호"],
   ["Discipline", "Realtime · Motion·3D · UX·UI"],
   ["Based in", "Seoul, KR"],
-  ["Email", "TODO_COPY — email"],
-  ["Availability", "TODO_COPY — 2026 —"],
+  ["Email", "lucas03100908@gmail.com"],
+  ["Availability", "Open to 2026 opportunities"],
 ];
 
 /* -------------------------------------------------------------- assets --- */
-/** TODO_ASSET — the full-bleed video behind the hero. */
+/** The full-bleed film behind the hero. */
 export const HERO_BG_SRC = "/video/hero-bg.mp4";
 
 export const SHOWREEL_SRC = "/video/showreel.mp4";
