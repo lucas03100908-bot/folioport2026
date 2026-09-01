@@ -3,12 +3,14 @@ import { BASE_HEX } from "@/lib/theme";
 import "./globals.css";
 
 /**
- * TODO_ASSET — Adobe Fonts (Typekit) web project id for the Fiona family.
- * Create a web project at fonts.adobe.com containing "Fiona", then put its kit
- * id in .env.local as NEXT_PUBLIC_TYPEKIT_ID. Until it is set nothing is
- * requested and the serif fallback stack in globals.css is used.
+ * Adobe Fonts (Typekit) web project holding the Fiona family.
+ *
+ * Hardcoded rather than kept in an env var: a kit id is public by definition —
+ * it ships in the stylesheet URL of every page that uses it — and baking it in
+ * means the font works on any host without deploy configuration. The env var
+ * still wins if one is set, for swapping kits without a code change.
  */
-const TYPEKIT_ID = process.env.NEXT_PUBLIC_TYPEKIT_ID;
+const TYPEKIT_ID = process.env.NEXT_PUBLIC_TYPEKIT_ID ?? "kuv1jiy";
 
 export const metadata: Metadata = {
   title: "MINHO — Realtime · Motion·3D · UX·UI",
