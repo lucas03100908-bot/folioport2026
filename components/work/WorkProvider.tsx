@@ -66,6 +66,29 @@ export default function WorkProvider({
     scrollToStage("work");
   }, []);
 
+  /**
+   * Opening the panel pushes a history entry, so the browser's own back button
+   * closes it. That is the control people reach for to leave something that
+   * fills the screen, and without an entry to go back to it took them off the
+   * site altogether.
+   */
+  const open = useCallback((p: Project) => {
+    setActive(p);
+    window.history.pushState({ minhoDetail: p.id }, "");
+  }, []);
+
+  const close = useCallback(() => {
+    // going back is what actually clears it — popstate below does the closing
+    if (window.history.state?.minhoDetail) window.history.back();
+    else setActive(null);
+  }, []);
+
+  useEffect(() => {
+    const onPop = () => setActive(null);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   // The detail panel freezes the page without losing the scroll position.
   useEffect(() => {
     const lenis = getLenis();
@@ -77,21 +100,15 @@ export default function WorkProvider({
       document.documentElement.classList.remove("lenis-stopped");
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActive(null);
+      if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active]);
+  }, [active, close]);
 
   const value = useMemo<Ctx>(
-    () => ({
-      category,
-      setCategory,
-      active,
-      open: (p: Project) => setActive(p),
-      close: () => setActive(null),
-    }),
-    [category, setCategory, active],
+    () => ({ category, setCategory, active, open, close }),
+    [category, setCategory, active, open, close],
   );
 
   return <WorkCtx.Provider value={value}>{children}</WorkCtx.Provider>;

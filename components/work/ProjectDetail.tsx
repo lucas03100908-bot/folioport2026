@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import MagneticButton from "@/components/chrome/MagneticButton";
 import { hasLink } from "@/lib/content";
@@ -10,6 +10,28 @@ import { useWork } from "./WorkProvider";
 export default function ProjectDetail() {
   const { active, close } = useWork();
   const root = useRef<HTMLDivElement>(null);
+  /** true while there is more panel below the fold and none of it seen yet */
+  const [more, setMore] = useState(false);
+
+  /*
+   * On a short laptop the call to action sits below the fold with nothing to
+   * say so. Rather than guess at a breakpoint, measure: the cue only appears
+   * when this panel really does overflow, and goes as soon as it is scrolled.
+   */
+  useEffect(() => {
+    const el = root.current;
+    if (!active || !el) return;
+    const check = () =>
+      setMore(el.scrollHeight - el.clientHeight > 24 && el.scrollTop < 24);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", check);
+      ro.disconnect();
+    };
+  }, [active]);
 
   useLayoutEffect(() => {
     if (!active || !root.current) return;
@@ -50,6 +72,9 @@ export default function ProjectDetail() {
           0.3,
         );
     }, root);
+    /* Without this the pressed card keeps focus behind the overlay, so space
+       and the arrow keys try to scroll a page that is locked. */
+    root.current.focus({ preventScroll: true });
     return () => ctx.revert();
   }, [active]);
 
@@ -68,9 +93,31 @@ export default function ProjectDetail() {
       role="dialog"
       aria-modal="true"
       aria-label={active.title}
+      tabIndex={-1}
+      /* Lenis is stopped while this is open, and a stopped Lenis calls
+         preventDefault() on every wheel and touch event it sees — which killed
+         this panel's own scrolling before the browser could act on it. The
+         attribute makes Lenis skip the event entirely and let it through. */
+      data-lenis-prevent
       className="fixed inset-0 z-[70] overflow-y-auto overscroll-contain bg-black/92 backdrop-blur-xl"
       style={{ opacity: 0 }}
     >
+      {/* Two ways out, at the two places people look for one. */}
+      <button
+        onClick={close}
+        className="glass fixed left-5 top-5 z-10 flex items-center gap-2.5 rounded-full px-4 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted transition-colors duration-300 hover:text-accent md:left-8 md:top-8"
+      >
+        <svg width="16" height="9" viewBox="0 0 16 9" aria-hidden>
+          <path
+            d="M16 4.5H2M6 1 2 4.5 6 8"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            fill="none"
+          />
+        </svg>
+        Back
+      </button>
+
       <button
         onClick={close}
         aria-label="Close project"
@@ -81,7 +128,16 @@ export default function ProjectDetail() {
         </svg>
       </button>
 
-      <div className="mx-auto grid min-h-full max-w-[1400px] grid-cols-1 items-center gap-10 px-5 py-24 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-12">
+      {/* Padding and media scale with the viewport's *height*, not its width.
+          A 1440x700 laptop is a wide screen and a short one, and fixed vertical
+          rhythm on a short screen pushed the call to action off the bottom. */}
+      <div
+        className="mx-auto grid min-h-full max-w-[1400px] grid-cols-1 items-center gap-8 px-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-12"
+        style={{
+          paddingTop: "clamp(5rem, 12vh, 7rem)",
+          paddingBottom: "clamp(3rem, 8vh, 6rem)",
+        }}
+      >
         {/* media */}
         <div data-detail-media className="relative">
           <div className="glass glass-rim relative overflow-hidden rounded-lg">
@@ -89,7 +145,7 @@ export default function ProjectDetail() {
             <img
               src={active.thumbnail}
               alt={`${active.title} still`}
-              className="aspect-[3/2] w-full object-cover"
+              className="aspect-[3/2] max-h-[34vh] w-full object-cover lg:max-h-[52vh]"
             />
             {/* TODO_ASSET: swap for a <video> loop when the real cut exists */}
           </div>
@@ -118,9 +174,9 @@ export default function ProjectDetail() {
             ))}
           </h2>
 
-          <div data-detail-block className="hair my-8" />
+          <div data-detail-block className="hair my-6 lg:my-8" />
 
-          <dl className="flex flex-col gap-3">
+          <dl className="flex flex-col gap-2.5 lg:gap-3">
             {spec.map(([k, v]) => (
               <div data-detail-block key={k} className="dotted text-muted">
                 <dt className="uppercase tracking-[0.18em] text-faint">{k}</dt>
@@ -132,12 +188,12 @@ export default function ProjectDetail() {
           <p
             data-detail-block
             /* `summary` keeps the portfolio's paragraph breaks as "\n\n" */
-            className="mt-8 max-w-[52ch] whitespace-pre-line text-[14px] leading-[1.85] text-muted"
+            className="mt-6 max-w-[52ch] whitespace-pre-line text-[14px] leading-[1.85] text-muted lg:mt-8"
           >
             {active.summary}
           </p>
 
-          <div data-detail-block className="mt-10">
+          <div data-detail-block className="mt-8 lg:mt-10">
             {hasLink(active) ? (
               <MagneticButton href={active.projectUrl}>
                 View Project
@@ -159,6 +215,17 @@ export default function ProjectDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      <div
+        aria-hidden
+        className={`pointer-events-none sticky bottom-0 -mt-24 flex h-24 items-end justify-center bg-gradient-to-t from-black/85 to-transparent pb-5 transition-opacity duration-500 ${
+          more ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted">
+          Scroll for details
+        </span>
       </div>
     </div>
   );
