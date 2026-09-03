@@ -128,5 +128,5 @@ export const HERO_BG_SRC = "/video/hero-bg.mp4";
 
 export const SHOWREEL_SRC = "/video/showreel.mp4";
 
-/** The reel runs a touch fast on purpose. */
-export const SHOWREEL_PLAYBACK_RATE = 1.25;
+/** The reel runs fast on purpose. */
+export const SHOWREEL_PLAYBACK_RATE = 1.8;
