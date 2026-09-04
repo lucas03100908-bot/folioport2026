@@ -181,7 +181,10 @@ export default function Preloader() {
       {/* the light itself, under the type */}
       <span aria-hidden className="preload-light" />
 
-      <p className="display relative flex text-[clamp(2.6rem,11vw,5.5rem)] leading-none text-ink">
+      {/* 11vw put the wordmark at its floor on a phone — 42px on a 375px screen,
+          a third of the width, which is why the cover barely registered there.
+          19vw fills it properly and still clamps to the same size on desktop. */}
+      <p className="display relative flex text-[clamp(3.6rem,19vw,5.5rem)] leading-none text-ink">
         {WAKING.split("").map((c, i) => (
           <span
             key={i}
@@ -200,7 +203,7 @@ export default function Preloader() {
         ))}
       </p>
 
-      <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.34em] text-muted">
+      <p className="mt-6 font-mono text-[13px] uppercase tracking-[0.3em] text-muted md:mt-5 md:text-[11px] md:tracking-[0.34em]">
         is waking
       </p>
 

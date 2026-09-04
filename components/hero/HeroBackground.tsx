@@ -50,25 +50,48 @@ export default function HeroBackground() {
           window.addEventListener("pointerdown", retry, opts);
         });
       } else {
-        // desktop: the film is a timeline that scroll scrubs
+        /* Desktop scrubs the film, and seeking to an arbitrary time needs it
+           buffered — so here, and only here, ask for the whole thing. By now
+           the first frame has already decoded, so this costs the loader
+           nothing. */
+        el.preload = "auto";
         el.loop = false;
         el.pause();
       }
+    };
+
+    /*
+     * Two signals, deliberately separate.
+     *
+     * The cover only needs to know the film is coming, and metadata is enough
+     * for that — with `preload="metadata"` a slow connection can sit at
+     * HAVE_METADATA for a while, and waiting for a decoded frame there would
+     * stall the loader all the way to its cap on every cold visit.
+     *
+     * The poster is the opposite: it must not fade until there is an actual
+     * frame underneath it, or it fades to black.
+     */
+    const announce = () => {
+      window.dispatchEvent(new CustomEvent("minho:ready"));
     };
 
     const onData = () => {
       setReady(true);
       settle();
       window.dispatchEvent(new CustomEvent("minho:layout"));
-      /* The film has a frame to show. This is what <Preloader/> waits on —
-         one decoded frame, not the whole 6.6MB, so the handoff happens as
-         soon as there is something behind the title. */
-      window.dispatchEvent(new CustomEvent("minho:ready"));
+      announce();
     };
+
+    if (el.readyState >= 1) announce();
+    else el.addEventListener("loadedmetadata", announce, { once: true });
 
     if (el.readyState >= 2) onData();
     else el.addEventListener("loadeddata", onData, { once: true });
-    return () => el.removeEventListener("loadeddata", onData);
+
+    return () => {
+      el.removeEventListener("loadedmetadata", announce);
+      el.removeEventListener("loadeddata", onData);
+    };
   }, []);
 
   return (
@@ -97,7 +120,13 @@ export default function HeroBackground() {
         playsInline
         autoPlay
         loop
-        preload="auto"
+        /*
+         * Metadata in the markup, upgraded below once we know which screen
+         * this is. `auto` here fetched all 6.3MB before the first frame was
+         * even on screen — and a phone never needs that, because it loops the
+         * film rather than scrubbing it, so it can stream as it plays.
+         */
+        preload="metadata"
         /*
          * Portrait phones crop a 16:9 film to a sliver — `cover` throws away
          * about three quarters of this frame and the particle wordmark stops
