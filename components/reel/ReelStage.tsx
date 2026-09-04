@@ -35,6 +35,35 @@ export default function ReelStage() {
 
   useEffect(() => setReduced(view.reduced), []);
 
+  /*
+   * Fetch the film when the visitor is nearly here, not when the page opens.
+   *
+   * Both copies used to be `preload="auto"`, and the main one carried
+   * `autoPlay` on top of that, so five megabytes of a film that lives on the
+   * third screen began downloading 103ms in — competing for bandwidth with the
+   * hero, which is the thing actually on screen. `metadata` holds it back;
+   * this observer releases it a whole viewport early, so it is buffered long
+   * before anyone arrives and nobody ever waits for it.
+   */
+  useEffect(() => {
+    const stage = document.querySelector('[data-stage="reel"]');
+    if (!stage) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        for (const v of [main.current, glow.current]) {
+          if (!v || v.preload === "auto") continue;
+          v.preload = "auto";
+          if (v.readyState === 0) v.load();
+        }
+        io.disconnect();
+      },
+      { rootMargin: "120% 0px 120% 0px", threshold: 0 },
+    );
+    io.observe(stage);
+    return () => io.disconnect();
+  }, []);
+
   /* playback: enter to play, leave to pause — never scroll-scrubbed */
   useEffect(() => {
     const stage = document.querySelector('[data-stage="reel"]');
@@ -108,7 +137,7 @@ export default function ReelStage() {
             muted
             loop
             playsInline
-            preload="auto"
+            preload="metadata"
           />
         </div>
 
@@ -125,9 +154,8 @@ export default function ReelStage() {
             src={SHOWREEL_SRC}
             muted
             loop
-            autoPlay
             playsInline
-            preload="auto"
+            preload="metadata"
             aria-hidden="true"
           />
           <div

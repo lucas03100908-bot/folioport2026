@@ -60,6 +60,10 @@ export default function HeroBackground() {
       setReady(true);
       settle();
       window.dispatchEvent(new CustomEvent("minho:layout"));
+      /* The film has a frame to show. This is what <Preloader/> waits on —
+         one decoded frame, not the whole 6.6MB, so the handoff happens as
+         soon as there is something behind the title. */
+      window.dispatchEvent(new CustomEvent("minho:ready"));
     };
 
     if (el.readyState >= 2) onData();

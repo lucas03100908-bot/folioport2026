@@ -376,3 +376,61 @@ html.lenis body {
     height: calc(100svh + 60vh);
   }
 }
+
+/* ---------------------------------------------------------- preloader --- */
+/*
+ * The letters wake in sequence. Opacity only, plus a hair of lift — no bloom
+ * and no scale pop: the cover is the first thing anyone sees, and it has to
+ * belong to the same restrained page as everything behind it.
+ */
+@keyframes preload-wake {
+  0%,
+  100% {
+    opacity: 0.16;
+    transform: translateY(0);
+  }
+  24% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+  58% {
+    opacity: 0.44;
+    transform: translateY(0);
+  }
+}
+
+.preload-letter {
+  animation: preload-wake 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preload-letter {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* The pointer light on the cover. Sits under the type and follows an eased
+   copy of the cursor, which <Preloader/> writes as --px/--py. */
+.preload-cover {
+  --px: 50vw;
+  --py: 50vh;
+}
+
+.preload-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    260px circle at var(--px) var(--py),
+    rgba(255, 122, 71, 0.16) 0%,
+    rgba(255, 77, 28, 0.07) 38%,
+    transparent 70%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preload-light {
+    display: none;
+  }
+}
