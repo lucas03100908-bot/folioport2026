@@ -3,13 +3,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import MagneticButton from "@/components/chrome/MagneticButton";
-import { hasLink } from "@/lib/content";
+import { EMAIL, hasLink } from "@/lib/content";
 import { view } from "@/lib/state";
 import { useWork } from "./WorkProvider";
 
 export default function ProjectDetail() {
   const { active, close } = useWork();
   const root = useRef<HTMLDivElement>(null);
+  /** whatever had focus when this opened, so it can be given back */
+  const opener = useRef<HTMLElement | null>(null);
   /** true while there is more panel below the fold and none of it seen yet */
   const [more, setMore] = useState(false);
 
@@ -72,10 +74,52 @@ export default function ProjectDetail() {
           0.3,
         );
     }, root);
+    /* Remember the card first — this is a layout effect and it is about to
+       take focus away from it, so anything reading `activeElement` later would
+       find the panel itself and have nowhere to hand focus back to. */
+    opener.current = document.activeElement as HTMLElement | null;
+
     /* Without this the pressed card keeps focus behind the overlay, so space
        and the arrow keys try to scroll a page that is locked. */
     root.current.focus({ preventScroll: true });
     return () => ctx.revert();
+  }, [active]);
+
+  /*
+   * Focus belongs to the panel while it is open, and goes back where it came
+   * from when it closes.
+   *
+   * Tab used to walk straight out of the overlay and into the page behind it,
+   * which is invisible and scroll-locked; and on close it fell to the top of
+   * the document, so a keyboard visitor who opened the fourth card was
+   * returned to the start of the site.
+   */
+  useEffect(() => {
+    if (!active) return;
+    const el = root.current;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab" || !el) return;
+      const stops = el.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!stops.length) return;
+      const first = stops[0];
+      const last = stops[stops.length - 1];
+      const on = document.activeElement;
+      if (e.shiftKey && (on === first || on === el)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && on === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      opener.current?.focus?.({ preventScroll: true });
+    };
   }, [active]);
 
   if (!active) return null;
@@ -207,11 +251,22 @@ export default function ProjectDetail() {
                 </svg>
               </MagneticButton>
             ) : (
-              /* no link recorded yet — say so rather than offering a dead
-                 button. Add one at /studio while running `next dev`. */
-              <span className="inline-flex items-center gap-3 border border-white/12 px-6 py-4 font-mono text-[10px] tracking-[0.22em] text-faint">
-                LINK COMING SOON
-              </span>
+              /* No link recorded yet. A dead button is worse than none, and
+                 "coming soon" on its own reads as a broken control — so say
+                 what is true and point at the way through instead. Add the
+                 link at /studio while running `next dev`. */
+              <p className="max-w-[38ch] text-[13px] leading-[1.7] text-faint">
+                This project isn&rsquo;t published anywhere public yet.{" "}
+                <a
+                  href={`mailto:${EMAIL}?subject=${encodeURIComponent(
+                    `About ${active.title}`,
+                  )}`}
+                  className="text-muted underline decoration-white/25 underline-offset-4 transition-colors duration-300 hover:text-accent"
+                >
+                  Ask me about it
+                </a>
+                .
+              </p>
             )}
           </div>
         </div>

@@ -98,6 +98,7 @@ export default function LiquidTank({
   liquid = true,
   className,
   onClick,
+  label,
 }: {
   children?: React.ReactNode;
   tint?: [number, number, number];
@@ -111,6 +112,8 @@ export default function LiquidTank({
   liquid?: boolean;
   className?: string;
   onClick?: () => void;
+  /** what the card announces itself as; only meaningful when it is pressable */
+  label?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -261,8 +264,19 @@ export default function LiquidTank({
     };
   }, [generation, liquid]);
 
+  /* A card that does something is a button, not a div with a handler. As a
+     div it took no focus, answered no Enter or Space, and announced itself as
+     nothing — which meant the whole site, disciplines and projects both, could
+     not be opened without a mouse. */
+  const Tag = onClick ? "button" : "div";
+
   return (
-    <div ref={host} onClick={onClick} className={cn("liquid-tank", className)}>
+    <Tag
+      ref={host as React.Ref<HTMLDivElement & HTMLButtonElement>}
+      onClick={onClick}
+      {...(onClick ? { type: "button" as const, "aria-label": label } : null)}
+      className={cn("liquid-tank", className)}
+    >
       {still && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -292,9 +306,9 @@ export default function LiquidTank({
           className="absolute inset-0 h-full w-full"
         />
       )}
-      <div className="relative z-10 flex h-full flex-col justify-between p-7 md:p-10">
+      <span className="relative z-10 flex h-full flex-col justify-between p-7 md:p-10">
         {children}
-      </div>
-    </div>
+      </span>
+    </Tag>
   );
 }

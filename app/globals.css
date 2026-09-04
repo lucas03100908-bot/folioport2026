@@ -57,6 +57,28 @@ html.lenis body {
   overflow: hidden;
 }
 
+/*
+ * Keyboard focus.
+ *
+ * There was no rule for this anywhere, and two components had gone further and
+ * set `focus-visible:outline-none` — removing the browser's ring and putting
+ * nothing in its place. On the connect screen that meant tabbing through the
+ * social links moved an invisible cursor across blurred type.
+ *
+ * The offset ring reads on the near-black ground without touching any layout.
+ */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* the cards carry their own radius, so the ring should follow it */
+.liquid-tank:focus-visible {
+  outline-offset: 4px;
+  border-radius: 20px;
+}
+
 ::selection {
   background: var(--color-accent);
   color: #000;
@@ -155,6 +177,11 @@ html.lenis body {
    screen reads as depth rather than a flat wall of type. */
 .connect-far {
   filter: blur(4.5px) saturate(0.8);
+  /* so coming into focus is something the screen does, not something it snaps
+     to — the opacity of the type is a Tailwind class, hence `color` here too */
+  transition:
+    filter 900ms ease-out,
+    color 900ms ease-out;
 }
 
 /* The near copy: identical geometry, lit and in focus, but visible only inside
@@ -228,9 +255,20 @@ html.lenis body {
 /* -------------------------------------------------------- liquid tank --- */
 .liquid-tank {
   position: relative;
+  display: block;
   overflow: hidden;
   isolation: isolate;
   cursor: pointer;
+  /* it renders as a <button> when it is pressable — none of which should look
+     like one */
+  appearance: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   background: #0a0a0c;
   border-radius: 20px;
   box-shadow:
@@ -433,4 +471,10 @@ html.lenis body {
   .preload-light {
     display: none;
   }
+}
+
+/* Held still: the field comes into focus on its own. The spiders' sharp layer
+   still rides on top, so their light continues to read against it. */
+.connect-far-lit {
+  filter: blur(1.2px) saturate(0.95);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import ScrollEngine from "@/components/ScrollEngine";
+import ScrollEngine, { scrollToStage } from "@/components/ScrollEngine";
 import Nav from "@/components/chrome/Nav";
 import Preloader from "@/components/chrome/Preloader";
 import ProgressRail from "@/components/chrome/ProgressRail";
@@ -34,6 +34,22 @@ export default function Page() {
   return (
     <WorkProvider>
       <span id="top" />
+
+      {/* The first stop for a keyboard, ahead of four screens of chrome.
+          A button rather than an `#work` anchor: a hash jump moves the document
+          behind Lenis's back, which is the one thing this page cannot survive. */}
+      <button
+        type="button"
+        onClick={() => {
+          scrollToStage("work");
+          document
+            .querySelector<HTMLElement>('[data-stage="work"]')
+            ?.focus({ preventScroll: true });
+        }}
+        className="sr-only rounded-full bg-accent px-5 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-black focus:not-sr-only focus:fixed focus:left-5 focus:top-5 focus:z-[300]"
+      >
+        Skip to work
+      </button>
 
       {/* frame loop — renders nothing */}
       <ScrollEngine />

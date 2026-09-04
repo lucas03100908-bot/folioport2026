@@ -114,11 +114,14 @@ export const SOCIALS = [
 ] as const;
 
 /* -------------------------------------------------------------- contact --- */
+/** The address itself, so nothing has to search the table below for it. */
+export const EMAIL = "lucas03100908@gmail.com";
+
 export const CONTACT: [string, string][] = [
   ["Name", "Kim Minho / 김민호"],
   ["Discipline", "Realtime · Motion·3D · UX·UI"],
   ["Based in", "Seoul, KR"],
-  ["Email", "lucas03100908@gmail.com"],
+  ["Email", EMAIL],
   ["Availability", "Open to 2026 opportunities"],
 ];
 

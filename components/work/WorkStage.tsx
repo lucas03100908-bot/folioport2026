@@ -68,7 +68,9 @@ export default function WorkStage() {
   return (
     <section
       data-stage="work"
-      className="work-well pointer-events-auto relative w-full"
+      id="work"
+      tabIndex={-1}
+      className="work-well pointer-events-auto relative w-full outline-none"
       style={{ "--well": `${items.length * VH_PER_ITEM}vh` } as CSSProperties}
     >
       <div className="sticky top-0 flex h-svh w-full flex-col overflow-hidden">

@@ -109,6 +109,17 @@ export default function ScrollEngine() {
   useEffect(() => {
     readEnvironment();
 
+    /*
+     * Start at the top, always.
+     *
+     * Browsers restore the previous scroll position on reload, and on a page
+     * where scroll *is* the composition that drops you into the middle of a
+     * stage with no context — mid-film, mid-rail — and leaves Lenis reading a
+     * position it never animated to. Every visit begins where the piece does.
+     */
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+
     let nodes: EngineNodes = EMPTY_NODES;
 
     /* ------------------------------------------------------- measuring -- */

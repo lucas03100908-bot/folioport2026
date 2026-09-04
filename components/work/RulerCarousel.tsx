@@ -197,6 +197,7 @@ export default function RulerCarousel({
               liquid={liquid}
               className={tall ? "rail-tank rail-tank-tall" : "rail-tank"}
               onClick={() => press(i)}
+              label={`${it.title} — ${cta}`}
             >
               <span className="flex items-start justify-between gap-6">
                 <span className="eyebrow eyebrow-lg text-white/75">
@@ -266,7 +267,7 @@ function Step({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="text-muted transition-colors duration-300 hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+      className="text-muted transition-colors duration-300 hover:text-accent focus-visible:text-accent"
     >
       <svg
         width="28"
