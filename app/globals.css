@@ -148,14 +148,13 @@ html.lenis body {
    elements' inline opacity for the pulse, and inline always wins. */
 [data-spider-near] {
   color: var(--color-accent) !important;
-  text-shadow: 0 0 26px var(--color-accent-soft);
 }
 
 /* ------------------------------------------------------- connect depth --- */
 /* The far copy of the link field: pushed back with a gaussian blur so the
    screen reads as depth rather than a flat wall of type. */
 .connect-far {
-  filter: blur(3.5px) saturate(0.85);
+  filter: blur(4.5px) saturate(0.8);
 }
 
 /* The near copy: identical geometry, lit and in focus, but visible only inside
@@ -209,7 +208,12 @@ html.lenis body {
       rgba(0, 0, 0, 0.72) 42%,
       transparent 72%
     );
-  text-shadow: 0 0 34px var(--color-accent-soft);
+  /* No bloom. A glow says the type is emitting light, which is backwards —
+     it is being *lit*, by something with a body that is standing on it. What
+     separates the near copy from the far one is focus and contrast, and the
+     spiders lay a real cast shadow over the type from the canvas above. */
+  filter: brightness(1.2) contrast(1.08);
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.85);
 }
 
 @media (prefers-reduced-motion: reduce) {
