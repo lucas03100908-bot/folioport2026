@@ -30,6 +30,7 @@ export type SpiderPoint = { x: number; y: number };
 export function SpiderCursor({
   count = 3,
   active = true,
+  scale = 1,
   /** called every frame; return where the spiders should head, or null to idle */
   resolveTarget,
   /** reports every spider's position each frame, for whatever wants to react */
@@ -43,6 +44,13 @@ export function SpiderCursor({
 }: {
   count?: number;
   active?: boolean;
+  /**
+   * Multiplies the animal's size. Everything here is derived from
+   * `innerWidth`, which keeps the spiders proportionate on a desktop but
+   * shrinks them to nothing on a phone — a 375px viewport gives a body radius
+   * of about 8px. Scale it up there rather than rewriting the proportions.
+   */
+  scale?: number;
   resolveTarget?: () => SpiderPoint | null;
   onBodies?: (pts: SpiderPoint[]) => void;
   getScatter?: () => { x: number; y: number; id: number; until: number } | null;
@@ -82,6 +90,10 @@ export function SpiderCursor({
     let w = 0;
     let h = 0;
     let dpr = 1;
+
+    /* Strands thicken with the animal, or a scaled-up spider is just the same
+       thread spread wider — but only so far, past which it reads as rope. */
+    const weight = min(scale, 1.7);
 
     const SEGMENTS = 34; // strand smoothness vs. fill rate
     const RIM = 9; // strands converging on each foot
@@ -141,7 +153,7 @@ export function SpiderCursor({
       // each spider strolls on its own little orbit so the pair never overlaps
       const walk = { x: rnd(60, 55), y: rnd(60, 55) };
       // the radius the strands fan out from — larger reads as a bigger animal
-      const R = window.innerWidth / rnd(20, 34);
+      const R = (window.innerWidth / rnd(20, 34)) * scale;
 
       return {
         get pos() {
@@ -170,7 +182,7 @@ export function SpiderCursor({
           x += min(cap, (fx - x) / ease);
           y += min(cap, (fy - y) / ease);
 
-          const reach = window.innerWidth / 7;
+          const reach = (window.innerWidth / 7) * scale;
           let taken = 0;
 
           for (const a of anchors) {
@@ -192,7 +204,7 @@ export function SpiderCursor({
                per stroke, and this loop issues 9 × 8 × 3 = 216 of them a frame —
                enough to visibly drop the frame rate. The legs carry their own
                weight through opacity and width instead. */
-            ctx!.lineWidth = lerp(0.6, 3.6, Math.pow(depth, 1.3));
+            ctx!.lineWidth = lerp(0.6, 3.6, Math.pow(depth, 1.3)) * weight;
             ctx!.strokeStyle = `rgba(255,77,28,${(
               lerp(0.5, 1, Math.pow(depth, 0.9)) * (0.6 + 0.4 * grow)
             ).toFixed(3)})`;
@@ -208,7 +220,10 @@ export function SpiderCursor({
               );
             }
 
-            a.r = lerp(0.6, 5.6, Math.pow(depth, 1.5)) * (gripping ? 1.35 : 1);
+            a.r =
+              lerp(0.6, 5.6, Math.pow(depth, 1.5)) *
+              (gripping ? 1.35 : 1) *
+              weight;
             ctx!.fillStyle = `rgba(255,120,60,${(
               lerp(0.55, 1, Math.pow(depth, 0.9)) * (0.65 + 0.35 * grow)
             ).toFixed(3)})`;
@@ -268,7 +283,7 @@ export function SpiderCursor({
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
-  }, [active, count]);
+  }, [active, count, scale]);
 
   return (
     <canvas
