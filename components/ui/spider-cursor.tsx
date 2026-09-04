@@ -31,6 +31,8 @@ export function SpiderCursor({
   count = 3,
   active = true,
   scale = 1,
+  maxDpr = 2,
+  palette = "accent",
   /** called every frame; return where the spiders should head, or null to idle */
   resolveTarget,
   /** reports every spider's position each frame, for whatever wants to react */
@@ -51,6 +53,23 @@ export function SpiderCursor({
    * of about 8px. Scale it up there rather than rewriting the proportions.
    */
   scale?: number;
+  /**
+   * Ceiling on the canvas backing store's density. Stroke cost is paid per
+   * rasterised pixel, and these are soft translucent strands on black — a
+   * phone does not need two device pixels per CSS pixel to sell them.
+   */
+  maxDpr?: number;
+  /**
+   * "accent" draws the animal in the site's orange.
+   *
+   * "glass" is the frosted reading: cool near-white strands drawn additively,
+   * so light *builds up* where they cross and the body saturates to a bright
+   * core, with the feet as specular points. The DOM way of doing this —
+   * backdrop-filter plus an SVG displacement map — has nothing to bite on
+   * here, because a canvas paints its own pixels rather than sampling what is
+   * behind it. Compositing is what gives the same impression at the same cost.
+   */
+  palette?: "accent" | "glass";
   resolveTarget?: () => SpiderPoint | null;
   onBodies?: (pts: SpiderPoint[]) => void;
   getScatter?: () => { x: number; y: number; id: number; until: number } | null;
@@ -93,9 +112,18 @@ export function SpiderCursor({
 
     /* Strands thicken with the animal, or a scaled-up spider is just the same
        thread spread wider — but only so far, past which it reads as rope. */
-    const weight = min(scale, 1.7);
+    const weight = min(scale, 1.45);
 
-    const SEGMENTS = 34; // strand smoothness vs. fill rate
+    const glass = palette === "glass";
+    /* Additive light needs lower per-strand alpha, or nine strands converging
+       on one point blow straight out to flat white. */
+    const strandAlpha = glass ? ([0.16, 0.5] as const) : ([0.5, 1] as const);
+    const footAlpha = glass ? ([0.3, 0.92] as const) : ([0.55, 1] as const);
+    const strandRGB = glass ? "226,240,255" : "255,77,28";
+    const footRGB = glass ? "255,255,255" : "255,120,60";
+
+    const SEGMENTS = 34; // most points a single strand may be drawn with
+    const PX_PER_SEGMENT = 5; // ...but only this finely, which is plenty
     const RIM = 9; // strands converging on each foot
     const FEET = 8;
 
@@ -112,10 +140,18 @@ export function SpiderCursor({
       y1: number,
       wobble: number,
     ) {
+      /* Point count follows the strand's length rather than being fixed. A
+         short leg subdivided 34 times spends most of its points inside the
+         same pixel; below about 5px apart they cost path work and show
+         nothing. */
+      const steps = max(
+        6,
+        min(SEGMENTS, Math.round(hypot(x1 - x0, y1 - y0) / PX_PER_SEGMENT)),
+      );
       ctx!.beginPath();
       ctx!.moveTo(x0, y0);
-      for (let i = 1; i <= SEGMENTS; i++) {
-        const f = i / SEGMENTS;
+      for (let i = 1; i <= steps; i++) {
+        const f = i / steps;
         const x = lerp(x0, x1, f);
         const y = lerp(y0, y1, f);
         const k = noise(x / 5 + x0, y / 5 + y0) * wobble;
@@ -185,9 +221,20 @@ export function SpiderCursor({
           const reach = (window.innerWidth / 7) * scale;
           let taken = 0;
 
+          const reach2 = reach * reach;
+
           for (const a of anchors) {
-            const len = hypot(a.x - x, a.y - y);
-            const gripping = len < reach && taken < FEET;
+            /* Squared distance first: most anchors are nowhere near, and this
+               loop runs over every one of them, for every spider, every
+               frame. The square root is only worth taking for the few that
+               are in reach or still fading out. */
+            const dx = a.x - x;
+            const dy = a.y - y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > reach2 && !a.len) continue;
+
+            const len = hypot(dx, dy);
+            const gripping = d2 < reach2 && taken < FEET;
             if (gripping) taken++;
             a.len = max(0, min(a.len + (gripping ? 0.09 : -0.09), 1));
             if (!a.len) continue;
@@ -205,8 +252,9 @@ export function SpiderCursor({
                enough to visibly drop the frame rate. The legs carry their own
                weight through opacity and width instead. */
             ctx!.lineWidth = lerp(0.6, 3.6, Math.pow(depth, 1.3)) * weight;
-            ctx!.strokeStyle = `rgba(255,77,28,${(
-              lerp(0.5, 1, Math.pow(depth, 0.9)) * (0.6 + 0.4 * grow)
+            ctx!.strokeStyle = `rgba(${strandRGB},${(
+              lerp(strandAlpha[0], strandAlpha[1], Math.pow(depth, 0.9)) *
+              (0.6 + 0.4 * grow)
             ).toFixed(3)})`;
 
             const wobble = lerp(0.5, 3.4, depth);
@@ -224,8 +272,9 @@ export function SpiderCursor({
               lerp(0.6, 5.6, Math.pow(depth, 1.5)) *
               (gripping ? 1.35 : 1) *
               weight;
-            ctx!.fillStyle = `rgba(255,120,60,${(
-              lerp(0.55, 1, Math.pow(depth, 0.9)) * (0.65 + 0.35 * grow)
+            ctx!.fillStyle = `rgba(${footRGB},${(
+              lerp(footAlpha[0], footAlpha[1], Math.pow(depth, 0.9)) *
+              (0.65 + 0.35 * grow)
             ).toFixed(3)})`;
             drawCircle(a.x, a.y, a.r);
           }
@@ -250,7 +299,7 @@ export function SpiderCursor({
       if (w !== window.innerWidth || h !== window.innerHeight) {
         w = window.innerWidth;
         h = window.innerHeight;
-        dpr = min(window.devicePixelRatio || 1, 2);
+        dpr = min(window.devicePixelRatio || 1, maxDpr);
         canvas.width = Math.floor(w * dpr);
         canvas.height = Math.floor(h * dpr);
         canvas.style.width = `${w}px`;
@@ -270,6 +319,10 @@ export function SpiderCursor({
       ctx.clearRect(0, 0, w, h); // transparent: whatever is behind stays visible
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
+      /* Glass is light passing through light: strands that overlap should get
+         brighter, not merely cover one another. Costs nothing — it is a blend
+         mode, not another pass. */
+      ctx.globalCompositeOperation = glass ? "lighter" : "source-over";
 
       const t = time / 1000;
       for (const s of spiders) s.tick(t, time);
@@ -283,7 +336,7 @@ export function SpiderCursor({
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
-  }, [active, count, scale]);
+  }, [active, count, scale, maxDpr, palette]);
 
   return (
     <canvas

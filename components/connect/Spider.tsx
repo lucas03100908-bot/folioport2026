@@ -18,6 +18,15 @@ const IDLE_AFTER = 3.5;
 /** How long they stay scattered after a click before regrouping on the cursor. */
 const REGROUP_AFTER = 1800;
 
+/** Backing-store density for the spider canvas; a phone gets less of it. */
+const MOBILE_SPIDER_DPR = 1.5;
+
+/**
+ * Which reading of the animal to draw. "accent" is the orange one; "glass" is
+ * the frosted one. One word switches it back.
+ */
+const SPIDER_PALETTE = "glass" as const;
+
 /** Remembers that the tilt prompt has been answered, for this visit. */
 const GYRO_ASKED = "minho:gyro-asked";
 
@@ -27,8 +36,12 @@ const GYRO_ASKED = "minho:gyro-asked";
  * <SpiderCursor/> derives every dimension from `innerWidth`, so a 375px screen
  * produced a spider roughly a quarter the size of the desktop one — legible on
  * paper, nearly invisible in the hand.
+ *
+ * Not larger than this, though: strand cost is paid per rasterised pixel, so
+ * it climbs with the square of the animal, and a phone is where the frames are
+ * scarcest.
  */
-const MOBILE_SPIDER_SCALE = 2.2;
+const MOBILE_SPIDER_SCALE = 1.85;
 
 export default function Spider() {
   const [active, setActive] = useState(false);
@@ -256,6 +269,8 @@ export default function Spider() {
         count={3}
         active={active}
         scale={mobile ? MOBILE_SPIDER_SCALE : 1}
+        maxDpr={mobile ? MOBILE_SPIDER_DPR : 2}
+        palette={SPIDER_PALETTE}
         resolveTarget={resolveTarget}
         onBodies={onBodies}
         getScatter={getScatter}
