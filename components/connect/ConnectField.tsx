@@ -52,6 +52,9 @@ function Rows({ interactive }: { interactive: boolean }) {
                       href={s.href}
                       target="_blank"
                       rel="noopener noreferrer"
+                      /* Reachable by pointer, invisible to tab and to a screen
+                         reader — see the note on the layer below. */
+                      tabIndex={-1}
                       className="display px-[0.18em] text-[clamp(2rem,6vw,5.5rem)] transition-colors duration-300 hover:text-accent focus-visible:text-accent"
                     >
                       {s.label}
@@ -145,7 +148,19 @@ export default function ConnectField() {
           opacity: active ? 1 : 0,
           pointerEvents: active ? "auto" : "none",
         }}
-        aria-label="Social links"
+        /*
+         * A marquee has to repeat itself to flow: six rows, four passes each,
+         * three destinations — 72 links for 3 places to go. All of them were
+         * in the tab order and in the accessibility tree, so reaching the
+         * footer by keyboard meant passing Instagram twenty-four times, and a
+         * screen reader read the same three names seventy-two times.
+         *
+         * So the field is what it looks like: a picture. It still opens
+         * everything under the pointer. The same three links live in the
+         * footer as plain, still text, and that is the copy that answers to
+         * the keyboard and to assistive tech.
+         */
+        aria-hidden="true"
       >
         <Rows interactive />
       </div>

@@ -20,6 +20,16 @@ export const metadata: Metadata = {
     title: "MINHO",
     description: "Realtime Experience · Motion·3D · UX·UI",
     type: "website",
+    /* Without this, pasting the address into a chat or a post produced a bare
+       link with nothing to look at — which for a portfolio is the moment that
+       matters most. One frame of the hero film, which is the site's face. */
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "MINHO" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MINHO",
+    description: "Realtime Experience · Motion·3D · UX·UI",
+    images: ["/og.jpg"],
   },
 };
 
@@ -42,7 +52,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko" style={{ background: BASE_HEX }}>
+    /* The interface is English throughout — every label, every control. Only
+       the project write-ups are Korean, and those carry their own `lang`, so a
+       screen reader switches voice for them instead of reading the whole
+       chrome with the wrong one. */
+    <html lang="en" style={{ background: BASE_HEX }}>
       <body style={{ background: BASE_HEX }}>
         {TYPEKIT_ID && (
           <>

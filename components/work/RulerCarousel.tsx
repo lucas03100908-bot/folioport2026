@@ -180,8 +180,8 @@ export default function RulerCarousel({
         ref={trackRef}
         className={
           tall
-            ? "relative grid h-[64vh] min-h-[440px] touch-pan-y place-items-center"
-            : "relative grid h-[54vh] min-h-[360px] touch-pan-y place-items-center"
+            ? "rail-track relative grid h-[64vh] min-h-[440px] touch-pan-y place-items-center"
+            : "rail-track relative grid h-[54vh] min-h-[360px] touch-pan-y place-items-center"
         }
       >
         {items.map((it, i) => (
@@ -236,7 +236,7 @@ export default function RulerCarousel({
 
       <Rule flipped />
 
-      <div className="relative mt-9 flex items-center justify-center gap-8">
+      <div className="rail-controls relative mt-9 flex items-center justify-center gap-8">
         <Step dir={-1} label="Previous" onClick={() => railScrollTo(current() - 1)} />
         <p className="font-mono text-[13px] tracking-[0.24em] text-muted tabular-nums">
           <span data-engine="rail-counter" className="text-ink">

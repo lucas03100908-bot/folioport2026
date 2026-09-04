@@ -151,6 +151,20 @@ export function writeWork(c: FrameContext) {
       if (isCurrent) el.dataset.current = "1";
       else delete el.dataset.current;
     }
+
+    /* The rail is a carousel: one card is on the mark and the rest are scaled
+       down and blurred off to the sides. Now that they are real buttons they
+       would all be tab stops, so tabbing through the work stage meant walking
+       every project blind. Only the one on the mark answers to Tab; the arrows
+       and the arrow keys move the rail.
+
+       Kept out of the branch above, which only fires when a card *changes*
+       hands — a card that has never been current would never have been told
+       to step out of the tab order at all. A button defaults to tabIndex 0,
+       so comparing first means this still writes only when it must. */
+    const card = el.firstElementChild as HTMLElement | null;
+    const want = isCurrent ? 0 : -1;
+    if (card && card.tabIndex !== want) card.tabIndex = want;
   }
 
   // the rules travel under the cards, one major tick per project

@@ -11,9 +11,18 @@ export default function CategoryBar() {
   const { category, setCategory } = useWork();
 
   return (
+    /*
+     * Plain buttons, not a tablist.
+     *
+     * The tab roles were only half the pattern: `role="tablist"` and
+     * `role="tab"` with no `tabpanel` to control, so a screen reader announced
+     * "tab, 1 of 4" and then had nothing to point at. These filter a rail
+     * further down the page rather than swapping a panel beside them, so
+     * `aria-current` says what is true — this is the one you are looking at.
+     */
     <div
       className="no-scrollbar flex items-center gap-1 overflow-x-auto"
-      role="tablist"
+      role="group"
       aria-label="Project categories"
     >
       {CATEGORIES.map((c) => {
@@ -21,11 +30,14 @@ export default function CategoryBar() {
         return (
           <button
             key={c.id}
-            role="tab"
-            aria-selected={on}
+            type="button"
+            aria-current={on ? "true" : undefined}
             onClick={() => setCategory(c.id)}
             className={[
-              "group relative shrink-0 whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em]",
+              /* py-3.5 rather than py-2: at 33px these fell short of a
+                 comfortable touch target, and they are the first control
+                 anyone meets on a phone. 45px, inside a 64px nav row. */
+              "group relative shrink-0 whitespace-nowrap px-3 py-3.5 text-[11px] font-semibold uppercase tracking-[0.16em]",
               "transition-colors duration-300",
               on ? "text-accent" : "text-muted hover:text-ink",
             ].join(" ")}

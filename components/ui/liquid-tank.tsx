@@ -284,6 +284,12 @@ export default function LiquidTank({
             src={still}
             alt=""
             aria-hidden
+            /* A missing still would otherwise leave the card's flat charcoal
+               with a broken-image glyph on it. Hide the element and the card
+               falls back to its own ground, which is a plausible card. */
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
             className="absolute inset-0 h-full w-full object-cover"
           />
           <span

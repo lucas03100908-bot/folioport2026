@@ -189,6 +189,9 @@ export default function ProjectDetail() {
             <img
               src={active.thumbnail}
               alt={`${active.title} still`}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
               className="aspect-[3/2] max-h-[34vh] w-full object-cover lg:max-h-[52vh]"
             />
             {/* TODO_ASSET: swap for a <video> loop when the real cut exists */}
@@ -224,7 +227,10 @@ export default function ProjectDetail() {
             {spec.map(([k, v]) => (
               <div data-detail-block key={k} className="dotted text-muted">
                 <dt className="uppercase tracking-[0.18em] text-faint">{k}</dt>
-                <dd className="text-ink">{v}</dd>
+                {/* Role / Tools / Type are written in Korean; Year is not */}
+                <dd className="text-ink" lang={k === "Year" ? undefined : "ko"}>
+                  {v}
+                </dd>
               </div>
             ))}
           </dl>
@@ -232,6 +238,7 @@ export default function ProjectDetail() {
           <p
             data-detail-block
             /* `summary` keeps the portfolio's paragraph breaks as "\n\n" */
+            lang="ko"
             className="mt-6 max-w-[52ch] whitespace-pre-line text-[14px] leading-[1.85] text-muted lg:mt-8"
           >
             {active.summary}

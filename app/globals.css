@@ -478,3 +478,60 @@ html.lenis body {
 .connect-far-lit {
   filter: blur(1.2px) saturate(0.95);
 }
+
+/* ------------------------------------------------- short viewports (I) --- */
+/*
+ * A phone turned sideways.
+ *
+ * Everything on the work stage was sized for a tall screen: the card's height
+ * bottomed out at a 320px floor, the track held a 440px minimum, and the
+ * header took its padding from a fixed rhythm. At 812x375 that put the card
+ * 18px past the bottom of the screen, laid it over the stage title, and left
+ * the previous/next controls 104px below the fold — unreachable, because the
+ * stage is sticky and does not scroll.
+ *
+ * So on a short screen the whole stage is measured in the axis that is
+ * actually scarce.
+ */
+@media (max-height: 560px) and (min-width: 560px) {
+  /* The track needs a real height: its cards are absolutely positioned, so
+     `auto` collapses it to nothing and the card — centred on a zero-height
+     box — lands on top of the controls below. Sized so the header, the track,
+     the controls and the cue all add up to less than the screen. */
+  .rail-track {
+    height: 46vh !important;
+    min-height: 0 !important;
+  }
+
+  .rail-tank,
+  .rail-tank-tall {
+    width: min(46vw, 520px);
+    height: clamp(120px, 44vh, 240px);
+  }
+
+  .rail-controls {
+    margin-top: 0.6rem;
+  }
+
+  /* the card's own padding is a tall-screen rhythm too */
+  .liquid-tank > span {
+    padding: 1.1rem 1.3rem;
+  }
+
+  .work-well {
+    height: calc(100svh + 40vh);
+  }
+
+  .work-head {
+    padding-top: calc(var(--nav-h) + 0.5vh);
+  }
+
+  .work-head h2 {
+    font-size: clamp(1.05rem, 2.4vw, 1.5rem);
+    margin-top: 0.35rem;
+  }
+
+  .work-cue {
+    padding-bottom: 0.7rem;
+  }
+}
