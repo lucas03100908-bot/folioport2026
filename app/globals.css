@@ -528,6 +528,12 @@ html.lenis body {
     margin-top: 0.6rem;
   }
 
+  /* the card is 120–260px tall here; the title and the call to action are all
+     that fit */
+  .rail-blurb {
+    display: none;
+  }
+
   /* the card's own padding is a tall-screen rhythm too */
   .liquid-tank > span {
     padding: 1.1rem 1.3rem;

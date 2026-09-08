@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { PROJECTS } from "@/lib/content";
 import StudioClient from "./StudioClient";
 
@@ -12,18 +13,15 @@ export const dynamic = "force-dynamic";
  * Development only — the API behind it refuses to run in a production build.
  */
 export default function StudioPage() {
-  if (process.env.NODE_ENV === "production") {
-    return (
-      <main className="mx-auto max-w-[640px] px-6 py-32">
-        <p className="eyebrow">Studio</p>
-        <p className="mt-5 text-[13px] leading-relaxed text-muted">
-          The studio only runs locally. Start the site with{" "}
-          <code className="text-ink">npm run dev</code> and open{" "}
-          <code className="text-ink">/studio</code> there to add stills and links.
-        </p>
-      </main>
-    );
-  }
+  /*
+   * Gone entirely in production, rather than standing there explaining itself.
+   *
+   * It used to answer 200 with a note saying the tool only runs locally — which
+   * is true and useful to whoever is running `npm run dev`, and they are the
+   * one person who does not need to be told. To everyone else it is a live URL
+   * on a portfolio, indexable, that leads nowhere.
+   */
+  if (process.env.NODE_ENV === "production") notFound();
 
   return <StudioClient projects={PROJECTS} />;
 }

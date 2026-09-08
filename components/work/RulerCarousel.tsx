@@ -15,6 +15,8 @@ export type RailItem = {
   tint: [number, number, number];
   tags?: string[];
   still?: string;
+  /** one line of what it is — projects have one, disciplines do not */
+  blurb?: string;
 };
 
 /**
@@ -212,6 +214,19 @@ export default function RulerCarousel({
                 <span className="display block truncate text-[clamp(1.7rem,3.7vw,3rem)] leading-[0.95] text-white">
                   {it.title}
                 </span>
+
+                {/* Scrolling the rail used to give a name and nothing else, so
+                    you had to open a card to learn what it was. The line was
+                    already written and sitting unused in the data. Hidden where
+                    the card is shortest — a phone on its side has no room. */}
+                {it.blurb ? (
+                  <span
+                    lang="ko"
+                    className="rail-blurb mt-2.5 block max-w-[46ch] text-[12.5px] leading-[1.55] text-white/70 md:text-[13px]"
+                  >
+                    {it.blurb}
+                  </span>
+                ) : null}
                 <span className="mt-4 flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.26em] text-white/85">
                   {cta}
                   <svg width="19" height="10" viewBox="0 0 19 10" aria-hidden>

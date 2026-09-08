@@ -38,6 +38,7 @@ export default function WorkStage() {
         tint: CATEGORY_TINT[p.category],
         tags: p.tags,
         still: p.thumbnail,
+        blurb: p.blurb,
       }))
     : decks.map((c) => ({
         key: c.id,
