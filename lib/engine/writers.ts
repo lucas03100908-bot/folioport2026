@@ -209,7 +209,12 @@ export function writeReel(c: FrameContext) {
      carries its own on-screen type, and two sets of words fighting over the
      same frame is noise. It swells very slightly on the way out. */
   if (nodes.reelTitle) {
-    const out = smoothstep(0.18, 0.6, p);
+    /* The stamp dissolves to hand the screen over to the footage. If the
+       footage failed to load there is nothing to hand it to, and dissolving
+       would leave a black rectangle — so it stays, and the screen still reads
+       as something rather than as a hole. <ReelStage/> sets the flag. */
+    const filmFailed = nodes.reelTitle.dataset.filmFailed === "1";
+    const out = filmFailed ? 0 : smoothstep(0.18, 0.6, p);
     nodes.reelTitle.style.opacity = String(1 - out);
     nodes.reelTitle.style.transform = `scale(${lerp(1, 1.14, out).toFixed(4)})`;
   }

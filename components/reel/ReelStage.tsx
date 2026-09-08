@@ -64,6 +64,31 @@ export default function ReelStage() {
     return () => io.disconnect();
   }, []);
 
+  /*
+   * A film that will not load.
+   *
+   * Both copies point at the same file, so one failure is the failure. The
+   * frame would otherwise open onto black while the stamp faded out of it;
+   * the flag keeps the stamp, and the screen stays legible.
+   */
+  useEffect(() => {
+    const videos = [main.current, glow.current].filter(
+      (v): v is HTMLVideoElement => v !== null,
+    );
+    const onFail = () => {
+      const title = document.querySelector<HTMLElement>(
+        '[data-engine="reel-title"]',
+      );
+      if (title) title.dataset.filmFailed = "1";
+    };
+    // already-failed elements never fire the event again; the error persists
+    if (videos.some((v) => v.error)) onFail();
+    for (const v of videos) v.addEventListener("error", onFail);
+    return () => {
+      for (const v of videos) v.removeEventListener("error", onFail);
+    };
+  }, []);
+
   /* playback: enter to play, leave to pause — never scroll-scrubbed */
   useEffect(() => {
     const stage = document.querySelector('[data-stage="reel"]');

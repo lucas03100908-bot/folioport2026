@@ -82,6 +82,20 @@ export default function HeroBackground() {
       announce();
     };
 
+    /* If the film cannot load at all, say so at once. The cover waits on this
+       and otherwise sits out its full four-second cap — four seconds of
+       nothing, in front of a visitor whose hero is never coming. The poster
+       behind stays put, so the page still has a ground.
+     *
+     * `el.error` is checked first for the same reason `readyState` is below:
+     * the element is in the server-rendered markup and starts loading during
+     * parse, so by the time this effect runs the failure has usually already
+     * happened and the event will never fire again. The MediaError sticks
+     * around; the event does not. */
+    const onFail = () => announce();
+    if (el.error) announce();
+    else el.addEventListener("error", onFail, { once: true });
+
     if (el.readyState >= 1) announce();
     else el.addEventListener("loadedmetadata", announce, { once: true });
 
@@ -89,6 +103,7 @@ export default function HeroBackground() {
     else el.addEventListener("loadeddata", onData, { once: true });
 
     return () => {
+      el.removeEventListener("error", onFail);
       el.removeEventListener("loadedmetadata", announce);
       el.removeEventListener("loadeddata", onData);
     };

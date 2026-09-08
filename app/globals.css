@@ -5,7 +5,12 @@
   --color-base: #000000;
   --color-ink: #f2f2f2;
   --color-muted: #8a8a8a;
-  --color-faint: #4a4a4a;
+  /* 4.62:1 on the near-black ground. It was #4a4a4a, which measured 2.37:1 —
+     under the 4.5:1 floor for body text and under even the 3:1 large-text
+     one, on ten pieces of real copy: the spec-sheet labels, the rail counter,
+     the scroll cue, the "no link yet" note. `muted` above already clears the
+     floor at 6.08:1, so only the tier that failed moved. */
+  --color-faint: #767676;
   --color-hair: rgba(255, 255, 255, 0.12);
   --color-accent: #ff4d1c;
   --color-accent-soft: rgba(255, 77, 28, 0.16);
@@ -77,6 +82,16 @@ html.lenis body {
 .liquid-tank:focus-visible {
   outline-offset: 4px;
   border-radius: 20px;
+}
+
+/*
+ * The parts nobody draws still ship with the design. The caret and form
+ * controls default to the browser's own blue, which belongs to no palette
+ * here. Selection and the scrollbar were already themed; these were not.
+ */
+:root {
+  caret-color: var(--color-accent);
+  accent-color: var(--color-accent);
 }
 
 ::selection {
