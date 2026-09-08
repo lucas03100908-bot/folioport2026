@@ -250,7 +250,7 @@ export const BASE_PROJECTS: Project[] = [
     title: "INSIDEFEEL OUT",
     eyebrow: "Emotion Interface",
     context: "석사 수업 프로젝트 · 2024.03 – 2024.05",
-    role: "UI/UX Design / Prototyping",
+    role: "UX/UI 디자인 / 프로토타이핑",
     tools: "Adobe XD / Adobe Illustrator",
     blurb: "발달장애인의 감정 표현과 소통을 돕는 인터페이스",
     summary:
