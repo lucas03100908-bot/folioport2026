@@ -20,6 +20,9 @@ import {
 } from "@/lib/state";
 import type { EngineNodes } from "./nodes";
 
+/** How long the deck takes to open and gather, in milliseconds. */
+const SPREAD_MS = 1100;
+
 export type FrameContext = {
   nodes: EngineNodes;
   /** prefers-reduced-motion, read once per frame */
@@ -126,7 +129,28 @@ export function writeWork(c: FrameContext) {
   }
 
   const pos = rail.pos;
-  const stride = railStride(vw);
+  /*
+   * Opening a discipline throws the deck open in depth before drawing it back
+   * into the rail: the cards arrive stacked, fan out through Z so you can see
+   * how many there are, then gather onto the mark.
+   *
+   * It is one number. `spread` scales between the normal rail layout and the
+   * fanned one, so there are not two layouts to keep in step — the spring, the
+   * scroll and the swipe all keep driving the same cards throughout.
+   */
+  const elapsed = (performance.now() - rail.spreadAt) / SPREAD_MS;
+  // fast to open, slow to gather: opening is a surprise, gathering is guidance
+  const spread =
+    reduced || elapsed >= 1 || elapsed < 0
+      ? 0
+      : Math.sin(Math.pow(clamp(elapsed), 0.6) * Math.PI);
+
+  const stride = lerp(
+    railStride(vw),
+    // narrow enough that the whole set is on screen at the peak
+    (vw * 0.9) / Math.max(2, last),
+    spread,
+  );
   const current = clamp(Math.round(pos), 0, last);
 
   for (const el of nodes.railItems) {
@@ -138,13 +162,30 @@ export function writeWork(c: FrameContext) {
     // the spring's velocity leans the cards into the direction of travel
     const lean = reduced ? 0 : clamp(rail.vel * 0.6, -6, 6) * near;
 
+    /* Depth, only while the deck is open. Cards away from the mark fall back
+       and turn away from the viewer; the perspective on the track does the
+       rest. At spread 0 every one of these terms is zero and the transform is
+       exactly the flat one it has always been. */
+    const z = -ad * 140 * spread;
+    const turn = clamp(-d * 15, -55, 55) * spread;
+    const scale = lerp(0.72, 1, near) * lerp(1, 0.46, spread);
+
     el.style.transform =
-      `translate3d(calc(-50% + ${(d * stride).toFixed(1)}px), -50%, 0) ` +
-      `rotate(${lean.toFixed(2)}deg) scale(${lerp(0.72, 1, near).toFixed(3)})`;
-    el.style.opacity = (reduced ? 1 : clamp(1 - ad * 0.72)).toFixed(3);
-    el.style.filter = reduced ? "none" : `blur(${(ad * 3.5).toFixed(2)}px)`;
-    // the card on the mark opens; its neighbours centre themselves
-    el.style.pointerEvents = ad < 1.6 ? "auto" : "none";
+      `translate3d(calc(-50% + ${(d * stride).toFixed(1)}px), -50%, ${z.toFixed(1)}px) ` +
+      `rotateY(${turn.toFixed(2)}deg) rotate(${lean.toFixed(2)}deg) ` +
+      `scale(${scale.toFixed(3)})`;
+
+    /* The falloff is what makes the rail read as one card at a time — and it
+       is exactly wrong while the deck is open, where the whole point is being
+       able to count them. Both fade out with the spread. */
+    el.style.opacity = (
+      reduced ? 1 : lerp(clamp(1 - ad * 0.72), 1, spread)
+    ).toFixed(3);
+    el.style.filter = reduced
+      ? "none"
+      : `blur(${(ad * 3.5 * (1 - spread)).toFixed(2)}px)`;
+    // the card on the mark opens; nothing is pressable mid-flourish
+    el.style.pointerEvents = spread > 0.02 || ad >= 1.6 ? "none" : "auto";
 
     const isCurrent = i === current;
     if (isCurrent !== (el.dataset.current === "1")) {

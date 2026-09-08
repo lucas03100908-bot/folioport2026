@@ -550,3 +550,11 @@ html.lenis body {
     padding-bottom: 0.7rem;
   }
 }
+
+/* The rail's cards move in depth when a discipline opens, so the track has to
+   be the thing they have depth *in*. Without a perspective here their
+   translateZ is a no-op and the fan reads as a flat slide. */
+.rail-track {
+  perspective: 1600px;
+  perspective-origin: 50% 50%;
+}

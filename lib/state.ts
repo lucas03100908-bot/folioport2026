@@ -107,7 +107,25 @@ export const view = {
    * target instead. `dragging` stiffens the spring so the cards track the
    * finger rather than trailing it.
    */
-  rail: { pos: 0, target: 0, vel: 0, count: 0, manual: 0, dragging: false },
+  rail: {
+    pos: 0,
+    target: 0,
+    vel: 0,
+    count: 0,
+    manual: 0,
+    dragging: false,
+    /**
+     * When the opening flourish began, as a `performance.now()` stamp.
+     *
+     * A timestamp rather than a counter the writer advances by `dt`: the loop
+     * clamps `dt` to 1/20s so a stall cannot fling the spring, which is right
+     * for physics and wrong for a fixed-length animation — under 20fps the
+     * flourish would stretch out in wall time, and after a hidden tab it would
+     * resume mid-flight. Read against the clock it always takes as long as it
+     * says. `-Infinity` means long finished.
+     */
+    spreadAt: -Infinity,
+  },
 
   /* environment */
   mobile: false,

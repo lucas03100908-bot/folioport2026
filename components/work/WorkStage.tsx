@@ -52,8 +52,16 @@ export default function WorkStage() {
   useLayoutEffect(() => {
     // a new set of cards always starts on the first one (mobile's rail input)
     view.rail.manual = 0;
+
+    /* Throw the deck open, but only on the way *in*. Leaving for "All work" is
+       a step back and should feel immediate; a flourish on the way out just
+       makes the exit slow. The value lives on `view` rather than in state
+       because the carousel remounts on this very change — React would replay
+       from the wrong frame, the mutable one simply carries across. */
+    view.rail.spreadAt = isOpen ? performance.now() : -Infinity;
+
     window.dispatchEvent(new CustomEvent("minho:layout"));
-  }, [category]);
+  }, [category, isOpen]);
 
   const activate = (i: number) => {
     if (isOpen) {
