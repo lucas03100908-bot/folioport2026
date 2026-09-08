@@ -7,6 +7,9 @@ import { EMAIL, hasLink } from "@/lib/content";
 import { view } from "@/lib/state";
 import { useWork } from "./WorkProvider";
 
+/** Any Hangul at all means the value should be announced as Korean. */
+const HANGUL = /[가-힣]/;
+
 export default function ProjectDetail() {
   const { active, close } = useWork();
   const root = useRef<HTMLDivElement>(null);
@@ -229,8 +232,14 @@ export default function ProjectDetail() {
             {spec.map(([k, v]) => (
               <div data-detail-block key={k} className="dotted text-muted">
                 <dt className="uppercase tracking-[0.18em] text-faint">{k}</dt>
-                {/* all three are written in Korean */}
-                <dd className="text-ink" lang="ko">
+                {/*
+                  * Tagged per value, not per row. `tools` is almost always
+                  * bare product names — Blender, TouchDesigner, Adobe XD —
+                  * and one project's `role` is written in English too. Marking
+                  * the whole row Korean had a screen reader pronouncing all of
+                  * them with Korean rules.
+                  */}
+                <dd className="text-ink" lang={HANGUL.test(v) ? "ko" : undefined}>
                   {v}
                 </dd>
               </div>
