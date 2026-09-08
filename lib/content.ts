@@ -40,13 +40,17 @@ export type Project = {
   title: string;
   /** small-caps eyebrow above the title */
   eyebrow: string;
-  year: string;
+  /**
+   * The circumstance the work came out of — a show, a course, a commission,
+   * a piece made for its own sake. It replaced `year`, which carried "2026"
+   * on all seventeen records and so told a reader nothing, and absorbed
+   * `type`, which mostly restated the eyebrow above the title in Korean.
+   */
+  context: string;
   /** 역할 */
   role: string;
   /** 도구 */
   tools: string;
-  /** 유형 */
-  type: string;
   /** 요약 — the one-liner shown on cards */
   blurb: string;
   /** Body copy shown in the detail panel; "\n\n" separates paragraphs */

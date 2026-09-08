@@ -124,12 +124,14 @@ export default function ProjectDetail() {
 
   if (!active) return null;
 
+  /* Three rows that each say something the others do not. It was four, but
+     "Type" restated the eyebrow sitting above the title and "Year" read 2026
+     on every project in the portfolio. */
   const spec: [string, string][] = [
     ["Role", active.role],
     ["Tools", active.tools],
-    ["Type", active.type],
-    ["Year", active.year],
-  ];
+    ["Context", active.context],
+  ].filter((r): r is [string, string] => Boolean(r[1]));
 
   return (
     <div
@@ -227,8 +229,8 @@ export default function ProjectDetail() {
             {spec.map(([k, v]) => (
               <div data-detail-block key={k} className="dotted text-muted">
                 <dt className="uppercase tracking-[0.18em] text-faint">{k}</dt>
-                {/* Role / Tools / Type are written in Korean; Year is not */}
-                <dd className="text-ink" lang={k === "Year" ? undefined : "ko"}>
+                {/* all three are written in Korean */}
+                <dd className="text-ink" lang="ko">
                   {v}
                 </dd>
               </div>
