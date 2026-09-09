@@ -322,7 +322,7 @@ export default function Spider() {
       {needsGyro && active && asked && (
         <button
           onClick={askGyro}
-          className="glass fixed inset-x-0 bottom-24 z-[13] mx-auto w-fit rounded-full px-5 py-2.5 font-mono text-[10px] tracking-[0.2em] text-muted transition-colors duration-300 hover:text-ink"
+          className="glass fixed inset-x-0 bottom-24 z-[13] mx-auto w-fit rounded-full px-5 py-3 font-mono text-[12px] tracking-[0.2em] text-muted transition-colors duration-300 hover:text-ink"
         >
           TAP TO LET THEM FOLLOW YOUR TILT
         </button>

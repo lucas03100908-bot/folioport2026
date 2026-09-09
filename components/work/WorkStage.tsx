@@ -101,14 +101,14 @@ export default function WorkStage() {
                   </svg>
                   All work
                 </button>
-                <h2 className="display mt-3 text-[clamp(1.5rem,3vw,2.4rem)]">
+                <h2 className="display mt-3 text-[clamp(1.35rem,2.4vw,1.9rem)]">
                   {label}
                 </h2>
               </>
             ) : (
               <>
                 <p className="eyebrow">Selected Work</p>
-                <h2 className="display mt-3 text-[clamp(1.5rem,3vw,2.4rem)]">
+                <h2 className="display mt-3 text-[clamp(1.35rem,2.4vw,1.9rem)]">
                   Choose a discipline
                 </h2>
               </>
@@ -119,7 +119,12 @@ export default function WorkStage() {
         <div key={category} className="min-h-0 flex-1">
           <RulerCarousel
             items={items}
-            cta={isOpen ? "View Project" : "Enter"}
+            /* Not "View Project": that is what the *panel's* button does,
+               and it leaves the site. Pressing a card opens the write-up, so
+               the card says so. The same two words a step apart, meaning two
+               different things, is the kind of thing a visitor only notices as
+               a vague sense that the site misled them. */
+            cta={isOpen ? "View Details" : "Enter"}
             tall={!isOpen}
             liquid={!isOpen}
             onActivate={activate}
