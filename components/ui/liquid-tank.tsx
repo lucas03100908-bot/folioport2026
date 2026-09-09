@@ -79,14 +79,44 @@ float panels(vec2 p){
   return 1.0 - smoothstep(0.36, 0.45, max(g.x, g.y));
 }
 
-/* A gallery: white, lit from a coffered ceiling, the walls falling off a
-   little toward the back so the depth reads. */
+/*
+ * The room is lit, not coloured.
+ *
+ * The first version returned a constant grey per face, which is why it read as
+ * a flat white box rather than a space: nothing fell off, nothing darkened in
+ * a corner, and the only thing carrying any depth was a reflection that had to
+ * be cranked up to compensate. The ceiling is the light now, and every other
+ * surface is shaded by how much of it that surface can see.
+ */
+
+/* Irradiance from the coffered ceiling, treated as one big overhead source.
+   A wall in a white room lit from above is not dark — it catches nearly as
+   much as the floor — so the difference here is slight and the fall toward the
+   floor is gentle. */
+float light(vec3 p, vec3 n){
+  float drop = ((CEN.y + HALF.y) - p.y) / (2.0 * HALF.y);
+  return (0.90 + 0.10 * max(0.0, n.y)) * (1.0 - 0.15 * drop);
+}
+
+/* Corners lose light. The face being shaded has to be excluded from its own
+   occlusion — measuring the distance to the nearest wall from a point that is
+   *on* a wall gives zero, which shaded every wall in the room as though it
+   were jammed into a corner. That, with the figure above, was why a white
+   gallery came out near-black. */
+float ao(vec3 p, vec3 n){
+  vec3 d = HALF - abs(p - CEN) + abs(n) * 10.0;
+  return 0.62 + 0.38 * smoothstep(0.0, 0.5, min(min(d.x, d.y), d.z));
+}
+
 vec3 room(vec3 p, vec3 n){
-  float back = clamp((p.z - (CEN.z - HALF.z)) / (2.0 * HALF.z), 0.0, 1.0);
-  if (n.y < -0.5) return mix(vec3(0.62), vec3(1.0), panels(p.xz));
-  if (n.y > 0.5) return vec3(0.70 + 0.16 * back);
-  float seam = smoothstep(0.012, 0.0, abs(fract(p.z * 0.72) - 0.5) - 0.485);
-  return vec3(0.66 + 0.20 * back) - seam * 0.06;
+  if (n.y < -0.5){
+    /* The panels are the source, so they are over-bright on purpose and the
+       beams between them are the only dark thing up there. */
+    return mix(vec3(0.42), vec3(1.55), panels(p.xz));
+  }
+  vec3 plaster = vec3(1.0, 0.995, 0.98);
+  float grain = 0.975 + 0.05 * noise(p.xz * 26.0 + p.y * 13.0);
+  return plaster * light(p, n) * ao(p, n) * grain;
 }
 
 float waves(vec2 xz){
@@ -126,11 +156,18 @@ void main(){
    */
   float sub = surfaceY(pR.xz) - pR.y;
   if (sub > 0.0){
-    float k = 1.0 - exp(-sub * 3.2);
-    float cw = fbm(pR.xz * 3.1 + vec2(u_time * 0.16, u_time * -0.11));
-    cw = pow(cw, 2.2) * 2.6;
-    col = mix(col, u_tint * 0.42, k);
-    col *= 0.82 + 0.42 * cw * (1.0 - k * 0.5);
+    /* Under the waterline. The room's own colour is absorbed toward the
+       water's with depth, so the back wall goes under instead of ending at a
+       line, and the caustics land on whatever is down there. */
+    float k = 1.0 - exp(-sub * 3.0);
+    float cw = clamp(pow(fbm(pR.xz * 3.1 + vec2(u_time * 0.16, u_time * -0.11)), 2.4) * 2.2, 0.0, 1.25);
+    col = mix(col, u_tint * 0.5, k);
+    col += u_tint * cw * 0.55 * (1.0 - k * 0.55);
+    col += u_tint * (1.0 - k) * 0.35;
+  } else if (sub > -0.30){
+    /* And just above it, the pool spills light onto the wall — the glow that
+       makes a waterline read as lit rather than drawn. */
+    col += u_tint * exp(sub * 11.0) * 0.85;
   }
 
   if (abs(rd.y) > 0.0001){
@@ -145,61 +182,34 @@ void main(){
       float h = surfaceY(p.xz);
       vec3 nL = normalize(vec3(h - surfaceY(p.xz + vec2(e, 0.0)), e,
                                h - surfaceY(p.xz + vec2(0.0, e))));
+      float fres = pow(1.0 - max(0.0, dot(-rd, nL)), 4.0);
 
       vec3 rr = reflect(rd, nL);
       vec3 n2; float t2 = boxExit(p + nL * 0.002, rr, n2);
       vec3 refl = room(p + rr * t2, n2);
 
-      /* Looking steeply into water is looking a long way through it, so the
-         near edge of the pool goes deep and dark while the far edge stays a
-         mirror. It is also the only reason white type survives on a white
-         room: the card sets its title exactly where the water is deepest. */
+      float ca = clamp(pow(fbm(p.xz * 3.4 + vec2(u_time * 0.16, u_time * -0.11)), 2.4) * 2.2, 0.0, 1.25);
+
+      /* The body is emissive. A pool that is only lit goes the colour of the
+         room around it; this one has to hold its own colour against a white
+         gallery, which is the whole reason it is there. */
       float steep = clamp(abs(rd.y) * 3.4, 0.0, 1.0);
-      float fres = pow(1.0 - max(0.0, dot(-rd, nL)), 3.0);
+      vec3 body = u_tint * mix(1.45, 0.55, steep) + vec3(0.02);
+      body += u_tint * ca * 0.75;
 
-      /* Caustics: the ceiling grid, bent by the surface onto the floor. */
-      vec3 fl = p + refract(rd, nL, 0.75) * 0.55;
-      float ca = fbm(fl.xz * 3.1 + vec2(u_time * 0.16, u_time * -0.11));
-      ca = clamp(pow(ca, 2.4) * 2.2, 0.0, 1.25);  // bounded: unclamped peaks blew the pool to white
+      /* A quarter mirror at most, and only at grazing angles. Any more and the
+         white room simply replaces the water. */
+      vec3 water = mix(body, refl, clamp(0.05 + 0.42 * fres, 0.0, 1.0));
+      col = mix(col, water, clamp(0.42 + 0.5 * fres, 0.0, 1.0));
 
-      vec3 shallow = u_tint * 1.55 + vec3(0.04);
-      vec3 deep = u_tint * 0.16;
-      vec3 body = mix(shallow, deep, steep);
-      body *= 0.72 + 0.46 * ca;
-      body += u_tint * ca * 0.32 * (1.0 - steep);
-
-      /* Less mirror than before: a white room reflects so strongly that the
-         water loses its colour entirely, and the colour is the point. */
-      /* Blended over what is already there — the submerged room — rather than
-         replacing it, so the surface reads as a skin on water with depth
-         under it instead of as a lid. */
-      vec3 water = mix(body, refl, clamp(0.06 + 0.80 * fres, 0.0, 1.0));
-      col = mix(col, water, clamp(0.34 + 0.66 * fres, 0.0, 1.0));
-
-      /*
-       * The showy half.
-       *
-       * Physical correctness got the pool to sit in the room; none of it makes
-       * the thing *catch*. These four do, and every one of them rides the
-       * slosh, so pouring and tilting the card lights it up rather than just
-       * moving a level.
-       */
-
-      // 1. the meniscus — a hot line where the pool climbs the walls
+      // the meniscus, climbing the walls
       float wall = min(HALF.x - abs(p.x - CEN.x), HALF.z - abs(p.z - CEN.z));
-      col += (u_tint + vec3(0.6)) * exp(-wall * 18.0) * (0.34 + u_slosh * 0.9);
-
-      // 2. glints riding the crests
+      col += (u_tint + vec3(0.5)) * exp(-wall * 15.0) * (0.5 + u_slosh * 1.1);
+      // glints on the crests
       float glint = pow(max(0.0, nL.y - 0.978) * 46.0, 2.0);
-      col += vec3(1.0) * glint * (0.28 + u_slosh * 0.9);
-
-      // 3. the ceiling grid, thrown back off the surface as hard streaks
-      float streak = panels(p.xz * vec2(1.0, 0.35) + vec2(0.0, u_time * 0.05));
-      col += (u_tint * 0.9 + vec3(0.3)) * streak * pow(fres, 1.6) * 0.45;
-
-      // 4. and a bloom in the caustics themselves, so the bright parts of the
-      //    pattern read as light rather than as texture
-      col += u_tint * pow(max(0.0, ca - 0.85), 2.0) * 1.2;
+      col += vec3(1.0) * glint * (0.3 + u_slosh * 0.9);
+      // and a bloom where the caustics peak
+      col += u_tint * pow(max(0.0, ca - 0.8), 2.0) * 1.6;
     }
   }
 
