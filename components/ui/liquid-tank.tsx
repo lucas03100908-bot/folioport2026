@@ -4,10 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * A tank of liquid, simulated rather than animated.
+ * A tank of liquid standing in a white gallery, simulated rather than animated.
  *
- * The surface is three summed sines plus fbm caustics in a fragment shader,
- * driven by three state variables that behave like a fluid:
+ * Three state variables drive it, and they behave like a fluid:
  *
  *   slosh  turbulence, gained from how fast the pointer sweeps the face and
  *          bled off exponentially
@@ -15,8 +14,6 @@ import { cn } from "@/lib/utils";
  *   gulp   a press discharges the tank; the level drops and refills
  *
  * All three decay with `exp(-k · dt)`, so the feel is frame-rate independent.
- * Adapted from the Nexus tactile reference — that one ships a whole page inside
- * an iframe; here it is a plain canvas with the colour passed in.
  *
  * Each tank owns a WebGL context, so it stops drawing whenever its wrapper is
  * transparent (the rail hides everything but a few cards) and releases the
@@ -34,21 +31,25 @@ uniform float u_slosh;
 uniform vec3 u_tint;
 
 /*
- * A room, not a picture of one.
+ * A room, not a picture of one; water, not a coloured sheet.
  *
- * The camera sits inside a white box and looks at the back wall, which is where
- * the one-point perspective comes from. Nothing is an image and nothing is
- * marched: every surface is a ray/plane intersection against the six sides, so
- * the space costs a handful of divides per pixel. The coffered ceiling is a
- * procedural grid and the only light in there.
+ * The camera sits inside a white box and looks at the back wall — that is where
+ * the one-point perspective comes from. Every surface is a ray/plane
+ * intersection against the six sides, so the space costs a handful of divides.
+ * The coffered skylight is procedural and is the only light in here: the walls
+ * are bright beneath it and fall off toward the floor, which is what makes the
+ * ceiling belong to the room instead of sitting on top of it.
  *
- * The liquid is a height field on the floor. It reflects the room by bouncing
- * the ray once, refracts the floor beneath it, and carries caustics — and it
- * darkens the more steeply you look into it, which is both what deep water
- * does and what keeps the card's white type legible against a white room.
+ * The liquid is a height field, and it is *marched*, not solved — so it has
+ * real relief and a real silhouette against the far wall. It is shaded the way
+ * water is shaded and not the way a colour is: Fresnel decides how much of the
+ * room it mirrors, Beer-Lambert decides what colour survives the trip down to
+ * the floor and back, and the skylight's own reflection lands on the crests as
+ * a hard specular glint. That glint is the difference between liquid and paint.
  */
-const vec3 HALF = vec3(1.25, 0.60, 1.45);
-const vec3 CEN = vec3(0.0, 0.0, -0.45);
+const vec3 HALF = vec3(1.30, 0.75, 1.70);
+const vec3 CEN  = vec3(0.0, 0.0, -0.60);
+const float FLOORY = -0.75;
 
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}
 float noise(vec2 p){
@@ -59,11 +60,12 @@ float noise(vec2 p){
 }
 float fbm(vec2 p){
   float v=0.0, a=0.5;
-  for(int i=0;i<4;i++){ v+=a*noise(p); p=p*2.04+vec2(11.3,7.1); a*=0.5; }
+  for(int i=0;i<3;i++){ v+=a*noise(p); p=p*2.07+vec2(11.3,7.1); a*=0.5; }
   return v;
 }
 
-/* Where a ray that starts inside the box leaves it, and by which face. */
+/* Where a ray that starts inside the box leaves it, and by which face. The
+   normal points back into the room. */
 float boxExit(vec3 ro, vec3 rd, out vec3 n){
   vec3 inv = 1.0 / rd;
   vec3 tf = max((CEN - HALF - ro) * inv, (CEN + HALF - ro) * inv);
@@ -74,68 +76,158 @@ float boxExit(vec3 ro, vec3 rd, out vec3 n){
   return t;
 }
 
-/* Wide panels, thin beams — the grid of a lit ceiling rather than a lattice. */
-float panels(vec2 p){
-  vec2 g = abs(fract(p * 0.7) - 0.5);
-  return 1.0 - smoothstep(0.425, 0.475, max(g.x, g.y));
-}
-
-/*
- * The room is lit, not coloured.
- *
- * The first version returned a constant grey per face, which is why it read as
- * a flat white box rather than a space: nothing fell off, nothing darkened in
- * a corner, and the only thing carrying any depth was a reflection that had to
- * be cranked up to compensate. The ceiling is the light now, and every other
- * surface is shaded by how much of it that surface can see.
- */
-
-/* Irradiance from the coffered ceiling, treated as one big overhead source.
-   A wall in a white room lit from above is not dark — it catches nearly as
-   much as the floor — so the difference here is slight and the fall toward the
-   floor is gentle. */
-float light(vec3 p, vec3 n){
-  float drop = ((CEN.y + HALF.y) - p.y) / (2.0 * HALF.y);
-  return (0.90 + 0.10 * max(0.0, n.y)) * (1.0 - 0.15 * drop);
-}
-
-/* Corners lose light. The face being shaded has to be excluded from its own
-   occlusion — measuring the distance to the nearest wall from a point that is
-   *on* a wall gives zero, which shaded every wall in the room as though it
-   were jammed into a corner. That, with the figure above, was why a white
-   gallery came out near-black. */
+/* Corners lose light. The face being shaded is excluded from its own occlusion:
+   the distance to the nearest wall from a point that is *on* a wall is zero,
+   which shades every wall as though it were jammed into a corner — that alone
+   once rendered a white gallery near-black. */
 float ao(vec3 p, vec3 n){
   vec3 d = HALF - abs(p - CEN) + abs(n) * 10.0;
-  return 0.62 + 0.38 * smoothstep(0.0, 0.5, min(min(d.x, d.y), d.z));
+  /* The ceiling is the light, so nothing darkens as it approaches it. Left in,
+     it put the wall's darkest point directly beneath the brightest thing in
+     the room and the wall came out brightest across its middle — the opposite
+     of the reference, where the light washes down from the top. */
+  if (p.y > CEN.y) d.y = 10.0;
+  /* Barely there. Over half a world unit it read as two grey smudges smeared
+     across the back wall; even tightened, a 24% drop is more than a white room
+     lit from a full ceiling ever shows in a corner. */
+  return 0.94 + 0.06 * smoothstep(0.0, 0.24, min(min(d.x, d.y), d.z));
+}
+
+/* The coffered skylight: a rectangle of lit panels divided by slim beams, with
+   plain ceiling around it. Returns how much of the ceiling this point is, and
+   writes how much of it is beam. */
+float skylight(vec2 p, out float beam){
+  vec2 g = abs(fract((p - vec2(0.0, CEN.z)) / 0.52) - 0.5) * 0.52;
+  beam = 1.0 - smoothstep(0.030, 0.072, min(g.x, g.y));
+  return (1.0 - smoothstep(0.72, 0.82, abs(p.x)))
+       * (1.0 - smoothstep(1.16, 1.28, abs(p.y - CEN.z)));
 }
 
 vec3 room(vec3 p, vec3 n){
+  float a = ao(p, n);
+  float h = (p.y - FLOORY) / (2.0 * HALF.y);   // 0 at the floor, 1 at the ceiling
+
   if (n.y < -0.5){
-    /* The ceiling has to belong to the same room as the walls. It read as a
-       separate high-contrast graphic before — beams at 0.42 and panels blown
-       to 1.55 against flat 0.83 walls, a range three times as wide as
-       anything else in the frame. The walls now sit inside the ceiling's
-       range rather than between its extremes, and it takes the room's own
-       occlusion like every other surface. */
-    return mix(vec3(0.66), vec3(1.12), panels(p.xz)) * ao(p, n);
+    /* The ceiling is the light. Its panels are meant to be blown out — that is
+       what a lit panel looks like — and the room can carry it now because the
+       walls are brightest directly beneath it and darken on the way down. */
+    /* The panels are the brightest thing in the frame, but the plaster around
+       them is not dark. Dimming it by depth alone left a grey band between a
+       blown-white coffer and a 0.78 wall — a stripe across the top of the card
+       where the reference has a halo. So the plaster brightens toward the
+       coffer instead, using the same edge the coffer fades on: one continuous
+       run from beam to panel to cove to wall, with no step anywhere in it. */
+    float beam;
+    float lit = skylight(p.xz, beam);
+    float away = clamp((p.z - (CEN.z - HALF.z)) / (2.0 * HALF.z), 0.0, 1.0);
+    /* 3.4, not 1.15 — and the shoulder is what makes that possible.
+       A lit panel really is several times the radiance of the wall it lights,
+       and that ratio is the entire reason water reads as water: a mirror in a
+       box where everything is the same brightness reflects nothing you can
+       see. Held near 1.15 the room was evenly lit, the pool mirrored an even
+       field, and no amount of Fresnel could put a highlight on it. Seen
+       directly the panel still rolls off to white; seen in the water it is a
+       bright band against the dimmer walls, which is the streak. */
+    float panel = mix(3.4, 0.66, beam);
+    float plain = 0.84 + 0.20 * lit;
+    return vec3(1.0, 0.997, 0.99) * mix(plain, panel, lit)
+         * mix(0.90, 1.04, away) * mix(1.0, a, 0.4);
   }
-  /* No texture on any of it: the only variation is the light falling off and
-     the corners closing in. */
-  return vec3(1.0, 0.995, 0.98) * light(p, n) * ao(p, n);
+  if (n.y > 0.5){
+    // the floor takes the pool of light the skylight throws
+    float pool = 1.0 - smoothstep(0.0, 2.0, length(vec2(p.x, (p.z - CEN.z) * 0.72)));
+    return vec3(1.0, 0.998, 0.993) * (0.68 + 0.24 * pool) * a;
+  }
+  /* Walls. One gradient, one cove of spill under the skylight, nothing else —
+     no grain, no dither, no noise anywhere in this room.
+
+     The gradient is steep and the cove is strong, and both are there for the
+     water as much as for the wall. The camera sits low, so the pool mirrors
+     this wall rather than the ceiling; when the wall was one flat value the
+     reflection was one flat value too, and no amount of Fresnel could put a
+     highlight on a mirror of a blank field. Now a facet tilting a few degrees
+     swings its reflection between a dim lower wall and a blazing cove, which
+     is what breaks the surface into streaks. */
+  float fall = mix(0.48, 0.88, smoothstep(0.0, 0.96, h));
+  float cove = 0.80 * smoothstep(0.74, 1.0, h);
+  /* No panel joints. They were the last patterned thing in the room, and near
+     the back corners perspective packed them together into two grey vertical
+     smudges that read as dirt on the wall. Nothing here is patterned now:
+     light falling, and the corner closing. */
+  return vec3(1.0, 0.998, 0.99) * (fall + cove) * a;
 }
 
-float waves(vec2 xz){
-  float a = 0.006 + u_slosh * 0.030;
-  return a * (sin(xz.x * 3.3 + u_time * 1.5)
-            + sin(xz.y * 2.6 - u_time * 1.2) * 0.8
-            + sin((xz.x + xz.y) * 5.1 + u_time * 2.3) * 0.45);
+/* ------------------------------------------------------------- the water -- */
+
+/* Amplitude, so the march can bound the surface inside a thin slab and spend
+   all its steps where the water actually is. */
+float amplitude(){ return 0.030 + u_slosh * 0.022; }
+
+float height(vec2 q){
+  float t = u_time;
+  float h = sin(q.x * 2.4 + t * 1.05)
+          + sin(q.y * 1.9 - t * 0.82) * 0.85
+          + sin((q.x + q.y * 1.4) * 3.6 + t * 1.75) * 0.50;
+  h += (noise(q * 2.3 + vec2(t * 0.22, -t * 0.17)) - 0.5) * 2.2;
+  return amplitude() * h;
 }
 
-float surfaceY(vec2 xz){
-  return CEN.y - HALF.y
-       + u_level * (2.0 * HALF.y) * 0.62
-       + u_tilt * xz.x * 0.075
-       + waves(xz);
+float surfaceY(vec2 q){
+  return FLOORY + u_level * (2.0 * HALF.y) * 0.58 + u_tilt * q.x * 0.05 + height(q);
+}
+
+/* The marched surface gives the relief; this gives the material.
+   Three octaves of chop, added to the normal and never to the marched height:
+   nine noise lookups once per pixel instead of another field evaluation inside
+   a twenty-four step loop, and at this scale the eye cannot tell the two apart
+   except on the silhouette, which the swells already own.
+
+   This is the piece that was missing. A smooth swell mirrors one patch of wall
+   and returns one value, which is why the pool came out an even brown however
+   the Fresnel was set. Chop makes neighbouring facets look at very different
+   parts of the room — one at the blazing cove, the next at the dim wall by the
+   waterline — and it is that variance, not brightness, that reads as liquid. */
+vec3 waterNormal(vec2 q){
+  float e = 0.014;
+  float h = surfaceY(q);
+  vec3 n = normalize(vec3(h - surfaceY(q + vec2(e, 0.0)), e,
+                          h - surfaceY(q + vec2(0.0, e))));
+
+  vec2 g = vec2(0.0);
+  float amp = 0.105 + u_slosh * 0.075;
+  float f = 2.1;
+  for (int i = 0; i < 2; i++){
+    float fi = float(i);
+    vec2 w = vec2(u_time * (0.30 + 0.13 * fi), -u_time * (0.24 + 0.10 * fi));
+    float e2 = 0.09 / f;
+    float c = noise(q * f + w);
+    g += vec2(c - noise((q + vec2(e2, 0.0)) * f + w),
+              c - noise((q + vec2(0.0, e2)) * f + w)) * (amp / e2);
+    f *= 2.7;
+    amp *= 0.55;
+  }
+  return normalize(n + vec3(g.x, 0.0, g.y));
+}
+
+/* Ridges of an fbm read as caustics: thin bright lines that braid and drift. */
+float caustic(vec2 q){
+  float f = fbm(q * 1.9 + vec2(u_time * 0.17, -u_time * 0.13));
+  /* Wide enough to be light on a floor, not thin enough to be a crack. At
+     exponent 10 these were hairline ridges over a near-black body, which is
+     the read of cooling lava rather than of water. */
+  return pow(max(0.0, 1.0 - abs(f * 2.0 - 1.0)), 5.0);
+}
+
+/* A soft shoulder instead of a hard clip.
+   Everything in here is a real quantity of light, and some of it is genuinely
+   brighter than the display: a lit ceiling panel, a specular glint on a crest.
+   Truncating those at 1.0 turns them into flat white shapes — a 120-row slab
+   of #ffffff across the top of the card, and glints with no falloff. This rolls
+   them off asymptotically instead, so the brightest things stay the brightest
+   and still have structure. */
+vec3 shoulder(vec3 c){
+  vec3 e = max(c - 0.86, 0.0);
+  return min(c, vec3(0.86) + 0.14 * (vec3(1.0) - exp(-e / 0.14)));
 }
 
 void main(){
@@ -143,83 +235,120 @@ void main(){
      alone narrowed the horizontal field of view as the card got narrower, and
      on a phone both side walls fell outside the frame. */
   vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / min(u_res.x, u_res.y);
-  vec3 ro = vec3(0.0, 0.06, 1.05);
-  vec3 rd = normalize(vec3(uv, -0.95));
+  vec3 ro = vec3(0.0, 0.24, 1.15);
+  vec3 rd = normalize(vec3(uv, -1.05));
 
   vec3 nR; float tR = boxExit(ro, rd, nR);
   vec3 pR = ro + rd * tR;
   vec3 col = room(pR, nR);
 
-  /*
-   * Everything below the waterline is *under* it.
-   *
-   * Without this the walls and floor stay dry all the way down and the pool
-   * becomes a coloured sheet laid on top of a room — which is exactly what the
-   * hard edge along its far side was. Absorbing the room's own colour toward
-   * the water's, by how deep each point sits, means the back wall simply goes
-   * under: no line to draw, because there is no longer an edge there.
-   */
-  float sub = surfaceY(pR.xz) - pR.y;
-  if (sub > 0.0){
-    /* Under the waterline. The room's own colour is absorbed toward the
-       water's with depth, so the back wall goes under instead of ending at a
-       line, and the caustics land on whatever is down there. */
-    float k = 1.0 - exp(-sub * 3.0);
-    float cw = clamp(pow(fbm(pR.xz * 3.1 + vec2(u_time * 0.16, u_time * -0.11)), 2.4) * 2.2, 0.0, 1.25);
-    col = mix(col, u_tint * 0.5, k);
-    col += u_tint * cw * 0.55 * (1.0 - k * 0.55);
-    col += u_tint * (1.0 - k) * 0.35;
-  } else if (sub > -0.30){
-    /* And just above it, the pool spills light onto the wall — the glow that
-       makes a waterline read as lit rather than drawn. */
-    col += u_tint * exp(sub * 11.0) * 0.85;
-  }
-
-  if (abs(rd.y) > 0.0001){
-    float t = (surfaceY(ro.xz) - ro.y) / rd.y;
-    for (int i = 0; i < 3; i++){
-      vec3 q = ro + rd * t;
-      t -= (q.y - surfaceY(q.xz)) / rd.y;
-    }
-    vec3 p = ro + rd * t;
-    if (t > 0.0 && t < tR && abs(p.x - CEN.x) < HALF.x && abs(p.z - CEN.z) < HALF.z){
-      float e = 0.02;
-      float h = surfaceY(p.xz);
-      vec3 nL = normalize(vec3(h - surfaceY(p.xz + vec2(e, 0.0)), e,
-                               h - surfaceY(p.xz + vec2(0.0, e))));
-      float fres = pow(1.0 - max(0.0, dot(-rd, nL)), 4.0);
-
-      vec3 rr = reflect(rd, nL);
-      vec3 n2; float t2 = boxExit(p + nL * 0.002, rr, n2);
-      vec3 refl = room(p + rr * t2, n2);
-
-      float ca = clamp(pow(fbm(p.xz * 3.4 + vec2(u_time * 0.16, u_time * -0.11)), 2.4) * 2.2, 0.0, 1.25);
-
-      /* The body is emissive. A pool that is only lit goes the colour of the
-         room around it; this one has to hold its own colour against a white
-         gallery, which is the whole reason it is there. */
-      float steep = clamp(abs(rd.y) * 3.4, 0.0, 1.0);
-      vec3 body = u_tint * mix(1.45, 0.55, steep) + vec3(0.02);
-      body += u_tint * ca * 0.75;
-
-      /* Barely a mirror. At 47% the white room was simply replacing the water
-         wherever the view grazed the surface, which is most of the pool — the
-         far half went white and there was nothing left to look at. */
-      vec3 water = mix(body, refl, clamp(0.03 + 0.16 * fres, 0.0, 1.0));
-      col = mix(col, water, clamp(0.58 + 0.34 * fres, 0.0, 1.0));
-
-      // the meniscus, climbing the walls
-      float wall = min(HALF.x - abs(p.x - CEN.x), HALF.z - abs(p.z - CEN.z));
-      col += (u_tint + vec3(0.45)) * exp(-wall * 16.0) * (0.32 + u_slosh * 0.7);
-      // glints on the crests
-      float glint = pow(max(0.0, nL.y - 0.978) * 46.0, 2.0);
-      col += vec3(1.0) * glint * (0.16 + u_slosh * 0.5);
-      // and a bloom where the caustics peak
-      col += u_tint * pow(max(0.0, ca - 0.82), 2.0) * 1.1;
+  /* ----------------------------------------------- find the surface -- */
+  float hit = -1.0;
+  if (rd.y < -0.0005){
+    float amp = amplitude() * 3.6;
+    float base = FLOORY + u_level * (2.0 * HALF.y) * 0.58;
+    float t0 = max((base + amp - ro.y) / rd.y, 0.0);
+    float t1 = min((base - amp - ro.y) / rd.y, tR);
+    if (t1 > t0){
+      float dt = (t1 - t0) / 24.0;
+      float tp = t0;
+      float dp = 1.0;
+      for (int i = 1; i <= 24; i++){
+        float t = t0 + dt * float(i);
+        vec3 q = ro + rd * t;
+        float d = q.y - surfaceY(q.xz);
+        if (d < 0.0 && dp >= 0.0){
+          float lo = tp, hi = t;
+          for (int j = 0; j < 5; j++){
+            float m = (lo + hi) * 0.5;
+            vec3 qq = ro + rd * m;
+            if (qq.y - surfaceY(qq.xz) < 0.0) hi = m; else lo = m;
+          }
+          hit = (lo + hi) * 0.5;
+          break;
+        }
+        tp = t; dp = d;
+      }
     }
   }
 
-  gl_FragColor = vec4(col, 1.0);
+  vec3 pW = ro + rd * max(hit, 0.0);
+  bool wet = hit > 0.0 && hit < tR
+          && abs(pW.x - CEN.x) < HALF.x && abs(pW.z - CEN.z) < HALF.z;
+
+  if (wet){
+    vec3 nrm = waterNormal(pW.xz);
+    vec3 v = -rd;
+
+    /* Schlick. This is the whole reason the old one looked matte: it was an
+       emissive fill with the mirror capped at a flat 19%, so no part of the
+       surface was ever specular. Water is 2% face-on and near-total at a
+       graze, and it is that spread — dark and saturated where you look into
+       it, bright where you look across it — that reads as a liquid. */
+    /* Left almost unclamped. The body underneath is nearly black on purpose —
+       what you see on this surface is the room lying across it, which is the
+       one thing that cannot be faked into looking wet. Capping this was what
+       made the pool a slab of colour with a sheen painted on. */
+    float F = clamp(0.04 + 0.96 * pow(1.0 - max(dot(nrm, v), 0.0), 5.0), 0.0, 0.94);
+
+    vec3 rr = reflect(rd, nrm);
+    vec3 n2; float t2 = boxExit(pW + nrm * 0.004, rr, n2);
+    vec3 pr = pW + rr * t2;
+    vec3 refl = room(pr, n2) * 0.95;
+    /* A reflected ray that lands below the waterline is looking at water, not
+       at dry wall. Faded across a band rather than switched: as a hard test it
+       drew a clean diagonal line straight across the pool, exactly where the
+       reflections crossed the far waterline. */
+    refl = mix(refl, u_tint * 0.16,
+               smoothstep(0.0, 0.10, surfaceY(pr.xz) - pr.y));
+
+    /* Down through the body to the floor, and what colour survives the trip.
+       Beer-Lambert against (1 - tint) is why the deep parts go saturated and
+       nearly black instead of merely darker: the channels the tint does not
+       carry are the ones the water absorbs. */
+    vec3 rt = refract(rd, nrm, 0.752);
+    if (rt.y > -0.05) rt = normalize(vec3(rd.x, -0.7, rd.z));
+    float travel = (pW.y - FLOORY) / max(0.10, -rt.y);
+    vec3 fh = pW + rt * travel;
+    vec3 bed = room(vec3(clamp(fh.x, CEN.x - HALF.x, CEN.x + HALF.x), FLOORY,
+                         clamp(fh.z, CEN.z - HALF.z, CEN.z + HALF.z)),
+                    vec3(0.0, 1.0, 0.0));
+    bed *= 0.30 + caustic(fh.xz) * 0.9;
+    vec3 sigma = (vec3(1.0) - u_tint) * 3.4 + vec3(2.6);
+    vec3 trans = bed * exp(-travel * sigma);
+    trans = trans * 0.62 + u_tint * (0.02 + 0.08 * exp(-travel * 1.6));
+
+    vec3 water = mix(trans, refl, F);
+
+    /* The ceiling's own highlight, very tight.
+       A wide lobe put two blown white ellipses on the near water — a light
+       that is not in the room. At 520 only a facet within a couple of degrees
+       of level catches it, so with the chop above it comes out as scattered
+       crisp sparkles rather than as a blob, which is what the surface of water
+       under a big soft light actually does. */
+    vec3 L = normalize(vec3(0.0, 1.0, -0.24));
+    float nh = max(dot(nrm, normalize(L + v)), 0.0);
+    water += vec3(1.0, 0.99, 0.97) * pow(nh, 520.0) * 2.4;
+    water += vec3(1.0, 0.99, 0.97) * pow(nh, 26.0) * 0.09;
+
+    // where the surface stands up, it aerates and carries its own light
+    float steep = clamp((1.0 - nrm.y) * 4.4, 0.0, 1.0);
+    water += (vec3(0.22) + u_tint * 0.85) * smoothstep(0.28, 0.92, steep) * 0.40;
+
+    col = water;
+
+    // the meniscus, climbing the walls
+    float wall = min(HALF.x - abs(pW.x - CEN.x), HALF.z - abs(pW.z - CEN.z));
+    col += (u_tint + vec3(0.32)) * exp(-wall * 22.0) * (0.16 + u_slosh * 0.32);
+  } else {
+    /* Just above the waterline the pool spills onto the wall. Without it the
+       water ends at a drawn line; with it the wall is simply lit by what is
+       in front of it, and there is no edge left to see. */
+    float sub = surfaceY(pR.xz) - pR.y;
+    if (sub > -0.34 && sub < 0.0) col += u_tint * exp(sub * 9.0) * 0.16;
+  }
+
+  gl_FragColor = vec4(shoulder(max(col, 0.0)), 1.0);
 }`;
 
 const BASE = 0.56;
@@ -287,16 +416,40 @@ export default function LiquidTank({
       return;
     }
 
+    /* A failed compile used to be invisible: WebGL keeps running, the draw call
+       is a silent no-op, and the card renders as an empty transparent box that
+       looks exactly like a styling mistake. The log is worth having, and so is
+       the fallback — a bad shader now leaves a plausible card behind. */
+    const fail = () => {
+      box.style.background =
+        "linear-gradient(to top, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.14) 54%, #0a0a0c 55%)";
+      el.style.display = "none";
+    };
     const compile = (type: number, src: string) => {
       const sh = gl.createShader(type)!;
       gl.shaderSource(sh, src);
       gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        console.error("liquid-tank shader:", gl.getShaderInfoLog(sh));
+        return null;
+      }
       return sh;
     };
+    const vs = compile(gl.VERTEX_SHADER, VS);
+    const fs = compile(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) {
+      fail();
+      return;
+    }
     const prog = gl.createProgram()!;
-    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
-    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
     gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      console.error("liquid-tank link:", gl.getProgramInfoLog(prog));
+      fail();
+      return;
+    }
     gl.useProgram(prog);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -317,8 +470,14 @@ export default function LiquidTank({
       tint: gl.getUniformLocation(prog, "u_tint"),
     };
 
+    /* The surface is marched now — 24 samples plus a binary refine per pixel,
+       against 1 for the old solved plane, and the normal costs nine more noise
+       lookups on top. The room is smooth gradients and the water is
+       high-frequency, so neither reads as soft below device resolution; a
+       phone is both the slowest GPU and the smallest card, so it renders at
+       CSS pixels and spends nothing on a ratio nobody can see there. */
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth < 900 ? 1 : 1.4);
       const w = Math.max(1, Math.round(el.clientWidth * dpr));
       const h = Math.max(1, Math.round(el.clientHeight * dpr));
       if (el.width !== w || el.height !== h) {
@@ -374,6 +533,9 @@ export default function LiquidTank({
       resize();
       const t = tintRef.current;
       gl.uniform2f(u.res, el.width, el.height);
+      /* Reduced motion holds a still frame, but the surface still has to *be* a
+         surface — a flat plane at t=0 would show none of the relief the rest of
+         the shading is built on, so it is frozen mid-swell instead. */
       gl.uniform1f(u.time, reduced ? 2 : now / 1000);
       gl.uniform1f(u.level, s.level);
       gl.uniform1f(u.tilt, s.tilt);
@@ -449,7 +611,7 @@ export default function LiquidTank({
            is the part worth looking at, stays white. */
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.5)_0%,rgba(0,0,0,0.12)_18%,transparent_38%,transparent_58%,rgba(0,0,0,0.62)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.60)_0%,rgba(0,0,0,0.14)_20%,transparent_38%,rgba(0,0,0,0.18)_56%,rgba(0,0,0,0.58)_100%)]"
         />
       )}
       {liquid && (
