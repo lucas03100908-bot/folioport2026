@@ -74,9 +74,10 @@ float boxExit(vec3 ro, vec3 rd, out vec3 n){
   return t;
 }
 
+/* Wide panels, thin beams — the grid of a lit ceiling rather than a lattice. */
 float panels(vec2 p){
-  vec2 g = abs(fract(p * 0.9) - 0.5);
-  return 1.0 - smoothstep(0.36, 0.45, max(g.x, g.y));
+  vec2 g = abs(fract(p * 0.7) - 0.5);
+  return 1.0 - smoothstep(0.425, 0.475, max(g.x, g.y));
 }
 
 /*
@@ -110,13 +111,17 @@ float ao(vec3 p, vec3 n){
 
 vec3 room(vec3 p, vec3 n){
   if (n.y < -0.5){
-    /* The panels are the source, so they are over-bright on purpose and the
-       beams between them are the only dark thing up there. */
-    return mix(vec3(0.42), vec3(1.55), panels(p.xz));
+    /* The ceiling has to belong to the same room as the walls. It read as a
+       separate high-contrast graphic before — beams at 0.42 and panels blown
+       to 1.55 against flat 0.83 walls, a range three times as wide as
+       anything else in the frame. The walls now sit inside the ceiling's
+       range rather than between its extremes, and it takes the room's own
+       occlusion like every other surface. */
+    return mix(vec3(0.66), vec3(1.12), panels(p.xz)) * ao(p, n);
   }
-  vec3 plaster = vec3(1.0, 0.995, 0.98);
-  float grain = 0.975 + 0.05 * noise(p.xz * 26.0 + p.y * 13.0);
-  return plaster * light(p, n) * ao(p, n) * grain;
+  /* No texture on any of it: the only variation is the light falling off and
+     the corners closing in. */
+  return vec3(1.0, 0.995, 0.98) * light(p, n) * ao(p, n);
 }
 
 float waves(vec2 xz){
@@ -197,23 +202,23 @@ void main(){
       vec3 body = u_tint * mix(1.45, 0.55, steep) + vec3(0.02);
       body += u_tint * ca * 0.75;
 
-      /* A quarter mirror at most, and only at grazing angles. Any more and the
-         white room simply replaces the water. */
-      vec3 water = mix(body, refl, clamp(0.05 + 0.42 * fres, 0.0, 1.0));
-      col = mix(col, water, clamp(0.42 + 0.5 * fres, 0.0, 1.0));
+      /* Barely a mirror. At 47% the white room was simply replacing the water
+         wherever the view grazed the surface, which is most of the pool — the
+         far half went white and there was nothing left to look at. */
+      vec3 water = mix(body, refl, clamp(0.03 + 0.16 * fres, 0.0, 1.0));
+      col = mix(col, water, clamp(0.58 + 0.34 * fres, 0.0, 1.0));
 
       // the meniscus, climbing the walls
       float wall = min(HALF.x - abs(p.x - CEN.x), HALF.z - abs(p.z - CEN.z));
-      col += (u_tint + vec3(0.5)) * exp(-wall * 15.0) * (0.5 + u_slosh * 1.1);
+      col += (u_tint + vec3(0.45)) * exp(-wall * 16.0) * (0.32 + u_slosh * 0.7);
       // glints on the crests
       float glint = pow(max(0.0, nL.y - 0.978) * 46.0, 2.0);
-      col += vec3(1.0) * glint * (0.3 + u_slosh * 0.9);
+      col += vec3(1.0) * glint * (0.16 + u_slosh * 0.5);
       // and a bloom where the caustics peak
-      col += u_tint * pow(max(0.0, ca - 0.8), 2.0) * 1.6;
+      col += u_tint * pow(max(0.0, ca - 0.82), 2.0) * 1.1;
     }
   }
 
-  col += (hash(gl_FragCoord.xy) - 0.5) * 0.02;
   gl_FragColor = vec4(col, 1.0);
 }`;
 
