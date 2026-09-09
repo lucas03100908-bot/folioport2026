@@ -33,63 +33,112 @@ uniform float u_tilt;
 uniform float u_slosh;
 uniform vec3 u_tint;
 
+/*
+ * A room, not a picture of one.
+ *
+ * The camera sits inside a box and looks at the back wall, which is what makes
+ * the one-point perspective. Every surface is found by intersecting the ray
+ * with the six planes analytically — no marching, no texture, no image — so
+ * the whole space costs a handful of divides per pixel. The liquid is a height
+ * field on the floor of that box, and it reflects the room by bouncing the ray
+ * once and looking again.
+ */
+const vec3 HALF = vec3(1.25, 0.60, 1.45);
+const vec3 CEN = vec3(0.0, 0.0, -0.45);
+
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}
-float noise(vec2 p){
-  vec2 i=floor(p), f=fract(p);
-  vec2 u=f*f*(3.0-2.0*f);
-  return mix(mix(hash(i),hash(i+vec2(1.,0.)),u.x),
-             mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),u.x),u.y);
+
+/* Where a ray that starts inside the box leaves it, and by which face. */
+float boxExit(vec3 ro, vec3 rd, out vec3 n){
+  vec3 inv = 1.0 / rd;
+  vec3 tf = max((CEN - HALF - ro) * inv, (CEN + HALF - ro) * inv);
+  float t = min(min(tf.x, tf.y), tf.z);
+  if (t == tf.x) n = vec3(-sign(rd.x), 0.0, 0.0);
+  else if (t == tf.y) n = vec3(0.0, -sign(rd.y), 0.0);
+  else n = vec3(0.0, 0.0, -sign(rd.z));
+  return t;
 }
-float fbm(vec2 p){
-  float v=0.0; float a=0.5;
-  for(int i=0;i<4;i++){ v+=a*noise(p); p=p*2.04+vec2(11.3,7.1); a*=0.5; }
-  return v;
+
+/* The coffered ceiling is the only light in the room, so it is also the thing
+   the liquid has to have something to reflect. */
+float panels(vec2 p){
+  vec2 g = abs(fract(p * 0.9) - 0.5);
+  return 1.0 - smoothstep(0.36, 0.45, max(g.x, g.y));
+}
+
+vec3 room(vec3 p, vec3 n){
+  float back = clamp((p.z - (CEN.z - HALF.z)) / (2.0 * HALF.z), 0.0, 1.0);
+  if (n.y < -0.5) return mix(vec3(0.05), u_tint * 0.5 + vec3(0.46), panels(p.xz));
+  if (n.y > 0.5) return vec3(0.048 + 0.04 * back);
+  return vec3(0.04 + 0.065 * back);
+}
+
+float waves(vec2 xz){
+  float a = 0.005 + u_slosh * 0.028;
+  return a * (sin(xz.x * 3.3 + u_time * 1.5)
+            + sin(xz.y * 2.6 - u_time * 1.2) * 0.8
+            + sin((xz.x + xz.y) * 5.1 + u_time * 2.3) * 0.45);
+}
+
+float surfaceY(vec2 xz){
+  return CEN.y - HALF.y
+       + u_level * (2.0 * HALF.y) * 0.62
+       + u_tilt * xz.x * 0.075
+       + waves(xz);
 }
 
 void main(){
-  vec2 uv = gl_FragCoord.xy / u_res;
-  float ar = u_res.x / u_res.y;
-  float x = uv.x * ar;
-  float t = u_time;
+  /* Framed off the card's shorter side, not its height. Normalising by height
+     alone narrowed the horizontal field of view as the card got narrower, so
+     on a phone — where the card is taller than it is wide — both side walls
+     fell outside the frame and the room collapsed into horizontal bands: a
+     ceiling, a back wall, a puddle, and no sense of a space at all. */
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / min(u_res.x, u_res.y);
+  vec3 ro = vec3(0.0, 0.06, 1.05);
+  vec3 rd = normalize(vec3(uv, -0.95));
 
-  float amp = 0.012 + u_slosh * 0.045;
-  float surf = u_level
-    + u_tilt * (uv.x - 0.5) * 0.30
-    + amp * sin(x * 5.1 + t * 4.6)
-    + amp * 0.62 * sin(x * 9.7 + t * (-6.8) + 1.7)
-    + amp * 0.38 * sin(x * 14.3 + t * 8.9 + 4.2);
+  vec3 nR; float tR = boxExit(ro, rd, nR);
+  vec3 col = room(ro + rd * tR, nR);
 
-  float d = surf - uv.y;
+  if (abs(rd.y) > 0.0001){
+    /* Onto the height field with a couple of Newton steps rather than a march:
+       the waves are shallow, so the flat-plane guess is already close. */
+    float t = (surfaceY(ro.xz) - ro.y) / rd.y;
+    for (int i = 0; i < 3; i++){
+      vec3 q = ro + rd * t;
+      t -= (q.y - surfaceY(q.xz)) / rd.y;
+    }
+    vec3 p = ro + rd * t;
+    if (t > 0.0 && t < tR && abs(p.x - CEN.x) < HALF.x && abs(p.z - CEN.z) < HALF.z){
+      float e = 0.02;
+      float h = surfaceY(p.xz);
+      vec3 nL = normalize(vec3(h - surfaceY(p.xz + vec2(e, 0.0)), e,
+                               h - surfaceY(p.xz + vec2(0.0, e))));
+      vec3 rr = reflect(rd, nL);
+      vec3 n2; float t2 = boxExit(p + nL * 0.002, rr, n2);
+      vec3 refl = room(p + rr * t2, n2);
 
-  float inside = smoothstep(0.0, 0.012, d);
-  float depth = clamp(d / max(u_level, 0.001), 0.0, 1.0);
+      float fres = pow(1.0 - max(0.0, dot(-rd, nL)), 3.0);
+      float deep = clamp((h - (CEN.y - HALF.y)) / (2.0 * HALF.y), 0.0, 1.0);
+      vec3 body = mix(u_tint * 0.26, u_tint * 0.88 + vec3(0.04), deep);
+      col = mix(body, refl, clamp(0.16 + 0.78 * fres, 0.0, 1.0));
+      col += u_tint * pow(fres, 2.0) * u_slosh * 0.3;
+    }
+  }
 
-  vec3 col = mix(u_tint * 1.15 + vec3(0.22), u_tint * 0.26, depth);
-  float caust = fbm(vec2(x * 4.2, (uv.y + t * 0.14) * 4.2));
-  col *= 0.8 + 0.42 * caust;
-  col += u_tint * 0.45 * pow(max(0.0, d * 3.0), 1.5) * u_slosh;
+  /* The card sets type over this, and the ceiling is the brightest thing in
+     the frame. Pull the top down so the eyebrow stays readable. */
+  float y = gl_FragCoord.y / u_res.y;
+  col *= 1.0 - 0.45 * smoothstep(0.5, 1.0, y);
 
-  // the waterline: a broad glow and a hot core, both of which read above the
-  // surface too — so they carry their own alpha
-  float glow = exp(-abs(d) * 80.0) * 0.8;
-  float core = exp(-abs(d) * 220.0) * 0.4;
-  col += (u_tint + vec3(0.45)) * glow;
-  col += vec3(1.0) * core;
-
-  vec2 e = uv * (1.0 - uv);
-  col *= 0.55 + 0.45 * pow(e.x * e.y * 16.0, 0.22);
-
-  /* Everything above the surface is transparent, so the card's still shows
-     through and the object reads as half-submerged rather than as a panel with
-     a gradient painted on it. */
-  float a = clamp(inside + glow + core, 0.0, 1.0);
-  gl_FragColor = vec4(col, a);
+  col += (hash(gl_FragCoord.xy) - 0.5) * 0.02;
+  gl_FragColor = vec4(col, 1.0);
 }`;
 
 const BASE = 0.56;
 
 /** the site accent, used when a caller hands over no tint */
-const DEFAULT_TINT: [number, number, number] = [1.0, 0.3, 0.11];
+const DEFAULT_TINT: [number, number, number] = [1.0, 0.28, 0.1];
 
 export default function LiquidTank({
   children,
