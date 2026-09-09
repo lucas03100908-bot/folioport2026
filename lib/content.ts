@@ -101,10 +101,20 @@ export const projectsFor = (id: CategoryId | "all") =>
  * shader, not CSS — the accent orange stays the site's, and the other two are
  * pulled far enough apart in hue to be told apart at a glance.
  */
+/**
+ * One family, not three colours.
+ *
+ * These were 13°, 270° and 191° on the colour wheel — the accent, then a purple
+ * and a cyan from the opposite side of it, on a site whose whole palette is
+ * near-black, white and a single orange. They sit between 2° and 27° now and
+ * separate by lightness instead of hue, so a discipline still has its own
+ * shade without any of them introducing a colour the site does not otherwise
+ * own.
+ */
 export const CATEGORY_TINT: Record<CategoryId, [number, number, number]> = {
-  realtime: [1.0, 0.3, 0.11],
-  motion: [0.66, 0.32, 1.0],
-  ux: [0.06, 0.78, 0.95],
+  motion: [0.8, 0.12, 0.1], //   2°  deepest
+  realtime: [1.0, 0.28, 0.1], // 12°  the accent itself
+  ux: [0.98, 0.57, 0.24], //     27°  lightest
 };
 
 /* ------------------------------------------------------------- socials --- */
