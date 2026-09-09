@@ -36,17 +36,32 @@ uniform vec3 u_tint;
 /*
  * A room, not a picture of one.
  *
- * The camera sits inside a box and looks at the back wall, which is what makes
- * the one-point perspective. Every surface is found by intersecting the ray
- * with the six planes analytically — no marching, no texture, no image — so
- * the whole space costs a handful of divides per pixel. The liquid is a height
- * field on the floor of that box, and it reflects the room by bouncing the ray
- * once and looking again.
+ * The camera sits inside a white box and looks at the back wall, which is where
+ * the one-point perspective comes from. Nothing is an image and nothing is
+ * marched: every surface is a ray/plane intersection against the six sides, so
+ * the space costs a handful of divides per pixel. The coffered ceiling is a
+ * procedural grid and the only light in there.
+ *
+ * The liquid is a height field on the floor. It reflects the room by bouncing
+ * the ray once, refracts the floor beneath it, and carries caustics — and it
+ * darkens the more steeply you look into it, which is both what deep water
+ * does and what keeps the card's white type legible against a white room.
  */
 const vec3 HALF = vec3(1.25, 0.60, 1.45);
 const vec3 CEN = vec3(0.0, 0.0, -0.45);
 
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}
+float noise(vec2 p){
+  vec2 i=floor(p), f=fract(p);
+  vec2 u=f*f*(3.0-2.0*f);
+  return mix(mix(hash(i),hash(i+vec2(1.,0.)),u.x),
+             mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),u.x),u.y);
+}
+float fbm(vec2 p){
+  float v=0.0, a=0.5;
+  for(int i=0;i<4;i++){ v+=a*noise(p); p=p*2.04+vec2(11.3,7.1); a*=0.5; }
+  return v;
+}
 
 /* Where a ray that starts inside the box leaves it, and by which face. */
 float boxExit(vec3 ro, vec3 rd, out vec3 n){
@@ -59,22 +74,23 @@ float boxExit(vec3 ro, vec3 rd, out vec3 n){
   return t;
 }
 
-/* The coffered ceiling is the only light in the room, so it is also the thing
-   the liquid has to have something to reflect. */
 float panels(vec2 p){
   vec2 g = abs(fract(p * 0.9) - 0.5);
   return 1.0 - smoothstep(0.36, 0.45, max(g.x, g.y));
 }
 
+/* A gallery: white, lit from a coffered ceiling, the walls falling off a
+   little toward the back so the depth reads. */
 vec3 room(vec3 p, vec3 n){
   float back = clamp((p.z - (CEN.z - HALF.z)) / (2.0 * HALF.z), 0.0, 1.0);
-  if (n.y < -0.5) return mix(vec3(0.05), u_tint * 0.5 + vec3(0.46), panels(p.xz));
-  if (n.y > 0.5) return vec3(0.048 + 0.04 * back);
-  return vec3(0.04 + 0.065 * back);
+  if (n.y < -0.5) return mix(vec3(0.62), vec3(1.0), panels(p.xz));
+  if (n.y > 0.5) return vec3(0.70 + 0.16 * back);
+  float seam = smoothstep(0.012, 0.0, abs(fract(p.z * 0.72) - 0.5) - 0.485);
+  return vec3(0.66 + 0.20 * back) - seam * 0.06;
 }
 
 float waves(vec2 xz){
-  float a = 0.005 + u_slosh * 0.028;
+  float a = 0.006 + u_slosh * 0.030;
   return a * (sin(xz.x * 3.3 + u_time * 1.5)
             + sin(xz.y * 2.6 - u_time * 1.2) * 0.8
             + sin((xz.x + xz.y) * 5.1 + u_time * 2.3) * 0.45);
@@ -88,21 +104,36 @@ float surfaceY(vec2 xz){
 }
 
 void main(){
-  /* Framed off the card's shorter side, not its height. Normalising by height
-     alone narrowed the horizontal field of view as the card got narrower, so
-     on a phone — where the card is taller than it is wide — both side walls
-     fell outside the frame and the room collapsed into horizontal bands: a
-     ceiling, a back wall, a puddle, and no sense of a space at all. */
+  /* Framed off the card's shorter side, not its height: normalising by height
+     alone narrowed the horizontal field of view as the card got narrower, and
+     on a phone both side walls fell outside the frame. */
   vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / min(u_res.x, u_res.y);
   vec3 ro = vec3(0.0, 0.06, 1.05);
   vec3 rd = normalize(vec3(uv, -0.95));
 
   vec3 nR; float tR = boxExit(ro, rd, nR);
-  vec3 col = room(ro + rd * tR, nR);
+  vec3 pR = ro + rd * tR;
+  vec3 col = room(pR, nR);
+
+  /*
+   * Everything below the waterline is *under* it.
+   *
+   * Without this the walls and floor stay dry all the way down and the pool
+   * becomes a coloured sheet laid on top of a room — which is exactly what the
+   * hard edge along its far side was. Absorbing the room's own colour toward
+   * the water's, by how deep each point sits, means the back wall simply goes
+   * under: no line to draw, because there is no longer an edge there.
+   */
+  float sub = surfaceY(pR.xz) - pR.y;
+  if (sub > 0.0){
+    float k = 1.0 - exp(-sub * 3.2);
+    float cw = fbm(pR.xz * 3.1 + vec2(u_time * 0.16, u_time * -0.11));
+    cw = pow(cw, 2.2) * 2.6;
+    col = mix(col, u_tint * 0.42, k);
+    col *= 0.82 + 0.42 * cw * (1.0 - k * 0.5);
+  }
 
   if (abs(rd.y) > 0.0001){
-    /* Onto the height field with a couple of Newton steps rather than a march:
-       the waves are shallow, so the flat-plane guess is already close. */
     float t = (surfaceY(ro.xz) - ro.y) / rd.y;
     for (int i = 0; i < 3; i++){
       vec3 q = ro + rd * t;
@@ -114,22 +145,63 @@ void main(){
       float h = surfaceY(p.xz);
       vec3 nL = normalize(vec3(h - surfaceY(p.xz + vec2(e, 0.0)), e,
                                h - surfaceY(p.xz + vec2(0.0, e))));
+
       vec3 rr = reflect(rd, nL);
       vec3 n2; float t2 = boxExit(p + nL * 0.002, rr, n2);
       vec3 refl = room(p + rr * t2, n2);
 
+      /* Looking steeply into water is looking a long way through it, so the
+         near edge of the pool goes deep and dark while the far edge stays a
+         mirror. It is also the only reason white type survives on a white
+         room: the card sets its title exactly where the water is deepest. */
+      float steep = clamp(abs(rd.y) * 3.4, 0.0, 1.0);
       float fres = pow(1.0 - max(0.0, dot(-rd, nL)), 3.0);
-      float deep = clamp((h - (CEN.y - HALF.y)) / (2.0 * HALF.y), 0.0, 1.0);
-      vec3 body = mix(u_tint * 0.26, u_tint * 0.88 + vec3(0.04), deep);
-      col = mix(body, refl, clamp(0.16 + 0.78 * fres, 0.0, 1.0));
-      col += u_tint * pow(fres, 2.0) * u_slosh * 0.3;
+
+      /* Caustics: the ceiling grid, bent by the surface onto the floor. */
+      vec3 fl = p + refract(rd, nL, 0.75) * 0.55;
+      float ca = fbm(fl.xz * 3.1 + vec2(u_time * 0.16, u_time * -0.11));
+      ca = clamp(pow(ca, 2.4) * 2.2, 0.0, 1.25);  // bounded: unclamped peaks blew the pool to white
+
+      vec3 shallow = u_tint * 1.55 + vec3(0.04);
+      vec3 deep = u_tint * 0.16;
+      vec3 body = mix(shallow, deep, steep);
+      body *= 0.72 + 0.46 * ca;
+      body += u_tint * ca * 0.32 * (1.0 - steep);
+
+      /* Less mirror than before: a white room reflects so strongly that the
+         water loses its colour entirely, and the colour is the point. */
+      /* Blended over what is already there — the submerged room — rather than
+         replacing it, so the surface reads as a skin on water with depth
+         under it instead of as a lid. */
+      vec3 water = mix(body, refl, clamp(0.06 + 0.80 * fres, 0.0, 1.0));
+      col = mix(col, water, clamp(0.34 + 0.66 * fres, 0.0, 1.0));
+
+      /*
+       * The showy half.
+       *
+       * Physical correctness got the pool to sit in the room; none of it makes
+       * the thing *catch*. These four do, and every one of them rides the
+       * slosh, so pouring and tilting the card lights it up rather than just
+       * moving a level.
+       */
+
+      // 1. the meniscus — a hot line where the pool climbs the walls
+      float wall = min(HALF.x - abs(p.x - CEN.x), HALF.z - abs(p.z - CEN.z));
+      col += (u_tint + vec3(0.6)) * exp(-wall * 18.0) * (0.34 + u_slosh * 0.9);
+
+      // 2. glints riding the crests
+      float glint = pow(max(0.0, nL.y - 0.978) * 46.0, 2.0);
+      col += vec3(1.0) * glint * (0.28 + u_slosh * 0.9);
+
+      // 3. the ceiling grid, thrown back off the surface as hard streaks
+      float streak = panels(p.xz * vec2(1.0, 0.35) + vec2(0.0, u_time * 0.05));
+      col += (u_tint * 0.9 + vec3(0.3)) * streak * pow(fres, 1.6) * 0.45;
+
+      // 4. and a bloom in the caustics themselves, so the bright parts of the
+      //    pattern read as light rather than as texture
+      col += u_tint * pow(max(0.0, ca - 0.85), 2.0) * 1.2;
     }
   }
-
-  /* The card sets type over this, and the ceiling is the brightest thing in
-     the frame. Pull the top down so the eyebrow stays readable. */
-  float y = gl_FragCoord.y / u_res.y;
-  col *= 1.0 - 0.45 * smoothstep(0.5, 1.0, y);
 
   col += (hash(gl_FragCoord.xy) - 0.5) * 0.02;
   gl_FragColor = vec4(col, 1.0);
@@ -352,6 +424,17 @@ export default function LiquidTank({
         <span
           aria-hidden
           className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-black/90"
+        />
+      )}
+      {liquid && (
+        /* The room is a white gallery and the card sets white type at both
+           ends of it — the eyebrow against the lit ceiling, the title against
+           the pool. Darkening the whole render would just make the room grey,
+           so the type gets its own ground and the middle of the room, which
+           is the part worth looking at, stays white. */
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.5)_0%,rgba(0,0,0,0.12)_18%,transparent_38%,transparent_58%,rgba(0,0,0,0.62)_100%)]"
         />
       )}
       {liquid && (

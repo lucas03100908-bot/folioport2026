@@ -186,6 +186,16 @@ export default function RulerCarousel({
             : "rail-track relative grid h-[54vh] min-h-[360px] touch-pan-y place-items-center"
         }
       >
+        {/* The mark the rail centres on. It sits *behind* the cards: at z-20 it
+            drew a hairline straight through the artwork, which on a card
+            holding a white room read as a seam splitting the room in two.
+            Behind them it shows above and below the card, which is where a
+            mark on a rule belongs anyway. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-gradient-to-b from-transparent via-white/25 to-transparent"
+        />
+
         {items.map((it, i) => (
           <div
             key={it.key}
@@ -259,10 +269,6 @@ export default function RulerCarousel({
           </div>
         ))}
 
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-1/2 z-20 w-px bg-gradient-to-b from-transparent via-white/25 to-transparent"
-        />
       </div>
 
       <Rule flipped />
