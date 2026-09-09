@@ -191,7 +191,23 @@ export default function RulerCarousel({
             key={it.key}
             data-engine="rail-item"
             data-index={i}
-            className="absolute left-1/2 top-1/2"
+            className="engine-driven absolute left-1/2 top-1/2"
+            /*
+             * Seeded with what the engine is about to write, because it does
+             * not write until its next tick — and this element remounts on
+             * every category change, alongside the fan and a WebGL rebuild.
+             * Until then `left-1/2` alone put a 973px card's left edge at the
+             * centre of a 1280px screen: every card stacked, opaque, and a
+             * third of the way off the right of the viewport.
+             *
+             * The rail starts on the first card, so that one is the one that
+             * is visible. It also means the stage still shows a card if the
+             * engine never runs at all.
+             */
+            style={{
+              transform: `translate3d(-50%, -50%, 0) scale(${i === 0 ? 1 : 0.72})`,
+              opacity: i === 0 ? 1 : 0,
+            }}
           >
             <LiquidTank
               tint={it.tint}
