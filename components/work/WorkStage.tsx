@@ -4,7 +4,9 @@ import { useLayoutEffect, type CSSProperties } from "react";
 import {
   CATEGORIES,
   CATEGORY_TINT,
+  countFor,
   projectsFor,
+  type CategoryId,
 } from "@/lib/content";
 import { view } from "@/lib/state";
 import RulerCarousel, { type RailItem } from "./RulerCarousel";
@@ -14,62 +16,62 @@ import { useWork } from "./WorkProvider";
 const VH_PER_ITEM = 58;
 
 /**
- * ...but the whole well is capped. Unfiltered, the rail now holds all
- * seventeen projects, and 58vh apiece would be ten screens of scrolling to
- * reach the end of it. Past the cap the cards simply come faster.
- */
-const WELL_CAP_VH = 620;
-
-const wellVh = (count: number) =>
-  Math.min(count * VH_PER_ITEM, WELL_CAP_VH);
-
-/**
- * Stage 2 — the rule carousel.
+ * Stage 2 — one rule carousel, twice over.
  *
- * It holds the work. The nav's tabs filter it; nothing gates it. Page scroll
- * drives the rail, and pressing the card on the centre mark opens its write-up.
- *
- * It used to open on a chooser of three disciplines instead, which meant a
- * visitor had to pick a category before seeing a single piece — a decision
- * asked of someone who does not yet know what any of it is. Worse, the tab
- * labelled "All (17)" led to that chooser, so it showed three cards, not
- * seventeen. The label now tells the truth because the rail does.
+ * It starts holding the three disciplines. Press the tank on the centre mark
+ * and the same rail refills with that discipline's projects; press it again on
+ * a project and the detail opens. Page scroll drives the rail in both states,
+ * so there is only ever one thing to learn.
  */
 export default function WorkStage() {
   const { category, setCategory, open } = useWork();
-  const isFiltered = category !== "all";
-  const projects = projectsFor(category);
+  const isOpen = category !== "all";
+  const decks = CATEGORIES.filter((c) => c.id !== "all");
+  const projects = isOpen ? projectsFor(category as CategoryId) : [];
   const label = CATEGORIES.find((c) => c.id === category)?.label ?? "";
 
-  const items: RailItem[] = projects.map((p) => ({
-    key: p.id,
-    eyebrow: p.eyebrow,
-    title: p.title,
-    tint: CATEGORY_TINT[p.category],
-    tags: p.tags,
-    still: p.thumbnail,
-    blurb: p.blurb,
-  }));
+  const items: RailItem[] = isOpen
+    ? projects.map((p) => ({
+        key: p.id,
+        eyebrow: p.eyebrow,
+        title: p.title,
+        tint: CATEGORY_TINT[p.category],
+        tags: p.tags,
+        still: p.thumbnail,
+        blurb: p.blurb,
+      }))
+    : decks.map((c) => ({
+        key: c.id,
+        eyebrow: `${String(countFor(c.id)).padStart(2, "0")} Projects`,
+        title: c.label,
+        tint: CATEGORY_TINT[c.id as CategoryId],
+        // no still: a discipline is not a picture, and the liquid is the
+        // thing that distinguishes it. Stills belong to projects.
+      }));
 
   // the well's height follows the item count — the engine must re-measure
   useLayoutEffect(() => {
     // a new set of cards always starts on the first one (mobile's rail input)
     view.rail.manual = 0;
 
-    /* Throw the deck open on every change of set. There is no "way out" any
-       more — filtering to a discipline and clearing the filter are the same
-       kind of move, and both hand the rail a different set to show. The value
-       lives on `view` rather than in state because the carousel remounts on
-       this very change; React would replay from the wrong frame, the mutable
-       one simply carries across. */
-    view.rail.spreadAt = performance.now();
+    /* Throw the deck open, but only on the way *in*. Leaving for "All work" is
+       a step back and should feel immediate; a flourish on the way out just
+       makes the exit slow. The value lives on `view` rather than in state
+       because the carousel remounts on this very change — React would replay
+       from the wrong frame, the mutable one simply carries across. */
+    view.rail.spreadAt = isOpen ? performance.now() : -Infinity;
 
     window.dispatchEvent(new CustomEvent("minho:layout"));
-  }, [category]);
+  }, [category, isOpen]);
 
   const activate = (i: number) => {
-    const p = projects[i];
-    if (p) open(p);
+    if (isOpen) {
+      const p = projects[i];
+      if (p) open(p);
+    } else {
+      const c = decks[i];
+      if (c) setCategory(c.id as CategoryId);
+    }
   };
 
   return (
@@ -78,35 +80,39 @@ export default function WorkStage() {
       id="work"
       tabIndex={-1}
       className="work-well pointer-events-auto relative w-full outline-none"
-      style={{ "--well": `${wellVh(items.length)}vh` } as CSSProperties}
+      style={{ "--well": `${items.length * VH_PER_ITEM}vh` } as CSSProperties}
     >
       <div className="sticky top-0 flex h-svh w-full flex-col overflow-hidden">
         <header className="work-head shrink-0 px-5 pt-[calc(var(--nav-h)+4vh)] md:px-12">
           <div className="mx-auto w-full max-w-[1500px]">
-            {isFiltered ? (
-              <button
-                onClick={() => setCategory("all")}
-                className="eyebrow eyebrow-dim flex items-center gap-2 transition-colors duration-300 hover:text-accent"
-              >
-                <svg width="16" height="9" viewBox="0 0 16 9" aria-hidden>
-                  <path
-                    d="M16 4.5H2M6 1 2 4.5 6 8"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                    fill="none"
-                  />
-                </svg>
-                All work
-              </button>
+            {isOpen ? (
+              <>
+                <button
+                  onClick={() => setCategory("all")}
+                  className="eyebrow eyebrow-dim flex items-center gap-2 transition-colors duration-300 hover:text-accent"
+                >
+                  <svg width="16" height="9" viewBox="0 0 16 9" aria-hidden>
+                    <path
+                      d="M16 4.5H2M6 1 2 4.5 6 8"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      fill="none"
+                    />
+                  </svg>
+                  All work
+                </button>
+                <h2 className="display mt-3 text-[clamp(1.35rem,2.4vw,1.9rem)]">
+                  {label}
+                </h2>
+              </>
             ) : (
-              <p className="eyebrow">Selected Work</p>
+              <>
+                <p className="eyebrow">Selected Work</p>
+                <h2 className="display mt-3 text-[clamp(1.35rem,2.4vw,1.9rem)]">
+                  Choose a discipline
+                </h2>
+              </>
             )}
-            <h2 className="display mt-3 text-[clamp(1.35rem,2.4vw,1.9rem)]">
-              {isFiltered ? label : "All work"}
-              <span className="ml-3 font-mono text-[0.42em] tracking-[0.2em] text-muted tabular-nums">
-                {String(items.length).padStart(2, "0")}
-              </span>
-            </h2>
           </div>
         </header>
 
@@ -118,7 +124,9 @@ export default function WorkStage() {
                the card says so. The same two words a step apart, meaning two
                different things, is the kind of thing a visitor only notices as
                a vague sense that the site misled them. */
-            cta="View Details"
+            cta={isOpen ? "View Details" : "Enter"}
+            tall={!isOpen}
+            liquid={!isOpen}
             onActivate={activate}
           />
         </div>
