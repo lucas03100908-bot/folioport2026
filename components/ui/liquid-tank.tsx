@@ -87,11 +87,18 @@ float ao(vec3 p, vec3 n){
      the room and the wall came out brightest across its middle — the opposite
      of the reference, where the light washes down from the top. */
   if (p.y > CEN.y) d.y = 10.0;
-  /* Barely there. Over half a world unit it read as two grey smudges smeared
-     across the back wall; even tightened, a 24% drop is more than a white room
-     lit from a full ceiling ever shows in a corner. */
+  /* Neither are the vertical corners.
+     A soft 6% band at each back corner was the last thing on these walls that
+     read as a mark rather than as a room: a corner drawn as a blur instead of
+     as a corner. The junction already carries itself — a side wall and the
+     back wall are at different depths, so at a given height they meet at a
+     crisp step of a few percent, and a step is what an eye reads as an edge.
+     Measured either side of the seam: 0.749 against 0.714. */
+  d.x = 10.0;
+  d.z = 10.0;
   return 0.94 + 0.06 * smoothstep(0.0, 0.24, min(min(d.x, d.y), d.z));
 }
+
 
 /* The coffered skylight: a rectangle of lit panels divided by slim beams, with
    plain ceiling around it. Returns how much of the ceiling this point is, and
@@ -148,8 +155,25 @@ vec3 room(vec3 p, vec3 n){
      highlight on a mirror of a blank field. Now a facet tilting a few degrees
      swings its reflection between a dim lower wall and a blazing cove, which
      is what breaks the surface into streaks. */
-  float fall = mix(0.48, 0.88, smoothstep(0.0, 0.96, h));
-  float cove = 0.80 * smoothstep(0.74, 1.0, h);
+  /* Which way a wall faces, not just how high it is.
+     Shading these purely by height meant a side wall and the back wall came
+     out identical wherever they met, and once the corner blur was taken off
+     the room measured flat right across — 0.780 from edge to edge at mid
+     height, with no edge anywhere in it. A box whose corners return the same
+     number is not a box, and that is the thing still reading as a backdrop.
+     The back wall looks down the long axis of the coffer and the side walls
+     across its short one, so they do not receive the same light; the step at
+     the junction is what makes the room close around the water. */
+  float facing = abs(n.z) > 0.5 ? 1.0 : 0.87;
+  /* and a wall runs away from you. Without this the side walls came out as
+     two flat panels — 0.678 from the corner all the way to the frame edge —
+     which is the other half of a room not reading as one. The same figure the
+     ceiling already uses, so the two recede together. */
+  float recede = mix(0.90, 1.04, clamp((p.z - (CEN.z - HALF.z)) / (2.0 * HALF.z), 0.0, 1.0));
+  float lit = facing * recede;
+
+  float fall = mix(0.48, 0.88, smoothstep(0.0, 0.96, h)) * lit;
+  float cove = 0.80 * smoothstep(0.74, 1.0, h) * lit;
   /* No panel joints. They were the last patterned thing in the room, and near
      the back corners perspective packed them together into two grey vertical
      smudges that read as dirt on the wall. Nothing here is patterned now:
@@ -404,12 +428,33 @@ void main(){
     // the meniscus, climbing the walls — foam against the glass, not tint
     float wall = min(HALF.x - abs(pW.x - CEN.x), HALF.z - abs(pW.z - CEN.z));
     col += (u_tint * 0.5 + vec3(0.42)) * exp(-wall * 22.0) * (0.18 + u_slosh * 0.34);
-  } else {
-    /* Just above the waterline the pool spills onto the wall. Without it the
-       water ends at a drawn line; with it the wall is simply lit by what is
-       in front of it, and there is no edge left to see. */
-    float sub = surfaceY(pR.xz) - pR.y;
-    if (sub > -0.34 && sub < 0.0) col += u_tint * exp(sub * 9.0) * 0.30;
+  } else if (nR.y < 0.5){
+    /* The pool has to light the room it is standing in.
+       Without this the two never exchange anything: a saturated body of water
+       sits in a white box, the box stays exactly as white as it would be if
+       the water were not there, and the frame reads as two renders sharing a
+       card rather than as one place. A wall this close to that much coloured
+       water picks up its colour, and the surface focuses the ceiling into
+       bands that crawl up it — which is also what says the water is moving in
+       the part of the frame where you cannot see the water. */
+    float above = pR.y - surfaceY(pR.xz);
+    if (above > 0.0 && above < 0.42){
+      /* Kept low and kept short. Reaching three quarters of the way up the
+         wall and stretched vertically, this came out as sheets running down
+         the plaster — the room read as made of falling water. What a wall
+         actually does at this distance is take a little of the colour and a
+         little of the movement, in the hand's width above the surface. */
+      float near = exp(-above * 6.0);
+      vec2 wc = abs(nR.x) > 0.5 ? vec2(pR.z, pR.y) : vec2(pR.x, pR.y);
+      /* A shimmer, not a caustic. The fbm ridge that draws light on the bed
+         draws *lines*, and on a wall — compressed by perspective on the two
+         sides — the lines came out as sheets of flame climbing the plaster.
+         Plain noise instead: the wash moves, and it never resolves into a
+         pattern, which is the one thing these walls must not grow. */
+      float shimmer = 0.72 + 0.52 * noise(vec2(wc.x * 1.7, wc.y * 1.3)
+                                          + vec2(u_time * 0.26, -u_time * 0.19));
+      col += u_tint * near * 0.42 * shimmer;
+    }
   }
 
   gl_FragColor = vec4(shoulder(max(col, 0.0)), 1.0);
