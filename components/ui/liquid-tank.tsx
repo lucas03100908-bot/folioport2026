@@ -51,7 +51,18 @@ const vec3 HALF = vec3(1.30, 0.75, 1.70);
 const vec3 CEN  = vec3(0.0, 0.0, -0.60);
 const float FLOORY = -0.75;
 
-float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}
+/* Not sin-based.
+   fract(sin(dot(p, k)) * big) is the hash everyone reaches for and it repeats:
+   sin is periodic, the multiply folds it, and at some coordinate ranges the
+   same few values come back in the same order. On the water that surfaced as
+   one small curl motif printed over and over across the surface — which is
+   the thing that makes a procedural field read as a texture rather than as a
+   fluid. This one has no periodic function in it. */
+float hash(vec2 p){
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
 /* Quintic, not cubic.
    Smoothstep interpolation leaves the second derivative discontinuous at every
    cell boundary. Nothing shows while the noise is only being summed — but the
@@ -230,8 +241,8 @@ float bedY(vec2 q){
    rather than as a coloured fill, and "something" has to have form: dunes that
    catch the light on one side and lose it on the other. This is the bed's own
    slope, lit from overhead — geometry, not a texture laid on it. */
-float bedShade(vec2 q){
-  float e = 0.05;
+float bedShade(vec2 q, float foot){
+  float e = max(0.05, foot * 2.0);
   float g = (bedY(q + vec2(e, 0.0)) - bedY(q - vec2(e, 0.0))) * 0.55
           - (bedY(q + vec2(0.0, e)) - bedY(q - vec2(0.0, e))) * 0.90;
   return clamp(0.82 + g * 22.0, 0.50, 1.32);
@@ -269,7 +280,7 @@ float crestHeight(vec2 q){
    the Fresnel was set. Chop makes neighbouring facets look at very different
    parts of the room — one at the blazing cove, the next at the dim wall by the
    waterline — and it is that variance, not brightness, that reads as liquid. */
-vec3 waterNormal(vec2 q, out vec3 calm){
+vec3 waterNormal(vec2 q, float foot, out vec3 calm){
   float e = 0.014;
   float h = surfaceY(q);
   vec3 n = normalize(vec3(h - surfaceY(q + vec2(e, 0.0)), e,
@@ -298,10 +309,16 @@ vec3 waterNormal(vec2 q, out vec3 calm){
   for (int i = 0; i < 3; i++){
     float fi = float(i);
     vec2 w = vec2(u_time * (0.30 + 0.13 * fi), -u_time * (0.24 + 0.10 * fi));
+    /* An octave finer than the pixels it lands on cannot be drawn, and
+       sampled anyway it comes back as noise that crawls whenever the wave
+       moves. Each fades as its wavelength closes on the footprint, so the far
+       end of the pool gives up detail it could never have resolved and the
+       near end keeps every bit of it. */
+    float lod = 1.0 - smoothstep(0.30, 1.10, foot * f);
     float e2 = 0.09 / f;
     float c = noise(q * f + w);
     g += vec2(c - noise((q + vec2(e2, 0.0)) * f + w),
-              c - noise((q + vec2(0.0, e2)) * f + w)) * (amp / e2);
+              c - noise((q + vec2(0.0, e2)) * f + w)) * (amp / e2) * lod;
     f *= 2.7;
     amp *= 0.55;
   }
@@ -321,8 +338,12 @@ vec3 waterNormal(vec2 q, out vec3 calm){
    surface's own Laplacian and looks for where the refracted footprint
    collapses. The bright web that comes out is the wave's, it moves when the
    wave moves, and it goes where the geometry says it goes. */
-float caustic(vec2 q, float depth){
-  float e = 0.03;
+float caustic(vec2 q, float depth, float foot){
+  /* The step has to be at least a pixel wide. A Laplacian is a difference of
+     differences — it amplifies whatever is finest — so read at a fixed 0.03
+     while a far pixel covers 0.17 of the world, it was sampling detail the
+     frame cannot hold and handing back noise. */
+  float e = max(0.03, foot * 2.0);
   float h = height(q);
   float lap = (height(q + vec2(e, 0.0)) + height(q - vec2(e, 0.0))
              + height(q + vec2(0.0, e)) + height(q - vec2(0.0, e))
@@ -391,8 +412,13 @@ void main(){
           && abs(pW.x - CEN.x) < HALF.x && abs(pW.z - CEN.z) < HALF.z;
 
   if (wet){
+    /* How much of the world one pixel covers here: the ray's spread at this
+       distance, stretched by how far off vertical it meets the surface. Every
+       procedural term below band-limits itself against this. */
+    float foot = (hit / (min(u_res.x, u_res.y) * 1.05)) / max(0.08, abs(rd.y));
+
     vec3 calm;
-    vec3 nrm = waterNormal(pW.xz, calm);
+    vec3 nrm = waterNormal(pW.xz, foot, calm);
     vec3 v = -rd;
 
     /* Schlick. This is the whole reason the old one looked matte: it was an
@@ -459,7 +485,7 @@ void main(){
        blew the sand straight to white and took the floor back out of the
        picture the other way. Light on a floor is brighter than the floor, not
        four times the floor. */
-    bed *= bedShade(fh.xz) * (0.95 + caustic(fh.xz, travel) * 0.45);
+    bed *= bedShade(fh.xz, foot) * (0.95 + caustic(fh.xz, travel, foot) * 0.45);
     /* The ratio is what makes it seawater; the magnitude is only how fast the
        bed disappears, and at full strength it was taking the bed down to
        (0.02, 0.13, 0.15) — so the caustics were being computed in full and
