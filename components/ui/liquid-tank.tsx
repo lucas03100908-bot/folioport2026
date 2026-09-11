@@ -52,9 +52,16 @@ const vec3 CEN  = vec3(0.0, 0.0, -0.60);
 const float FLOORY = -0.75;
 
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}
+/* Quintic, not cubic.
+   Smoothstep interpolation leaves the second derivative discontinuous at every
+   cell boundary. Nothing shows while the noise is only being summed — but the
+   caustic ridge takes a derivative of it, and those creases came back as faint
+   oval and polygon outlines drawn across the water, which is the one shape a
+   fluid must never have. f*f*f*(f*(6f-15)+10) is flat to the second order at
+   both ends, and the grid goes away. */
 float noise(vec2 p){
   vec2 i=floor(p), f=fract(p);
-  vec2 u=f*f*(3.0-2.0*f);
+  vec2 u=f*f*f*(f*(f*6.0-15.0)+10.0);
   return mix(mix(hash(i),hash(i+vec2(1.,0.)),u.x),
              mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),u.x),u.y);
 }
@@ -267,14 +274,27 @@ vec3 waterNormal(vec2 q){
   return normalize(n + vec3(g.x, 0.0, g.y));
 }
 
-/* Ridges of an fbm read as caustics: thin bright lines that braid and drift. */
-float caustic(vec2 q){
-  float f = fbm(q * 1.9 + vec2(u_time * 0.17, -u_time * 0.13));
-  /* Wide enough to be light on a floor, not thin enough to be a crack. At
-     exponent 10 these were hairline ridges over a near-black body, which is
-     the read of cooling lava rather than of water. */
-  return pow(max(0.0, 1.0 - abs(f * 2.0 - 1.0)), 5.0);
+/* Caustics, from the surface that actually causes them.
+   The previous one lit the level set of an fbm — the set of points where the
+   noise crosses a threshold. A level set of a smooth field is a family of
+   closed contours, so it drew rings and cells across the water: contour lines,
+   not light. It also drifted on its own clock, unrelated to the waves above
+   it, which is the tell even when you cannot say what is wrong.
+
+   Light focuses where the surface is curved like a lens, so this reads the
+   surface's own Laplacian and looks for where the refracted footprint
+   collapses. The bright web that comes out is the wave's, it moves when the
+   wave moves, and it goes where the geometry says it goes. */
+float caustic(vec2 q, float depth){
+  float e = 0.03;
+  float h = height(q);
+  float lap = (height(q + vec2(e, 0.0)) + height(q - vec2(e, 0.0))
+             + height(q + vec2(0.0, e)) + height(q - vec2(0.0, e))
+             - 4.0 * h) / (e * e);
+  float focus = 1.0 / max(0.16, abs(1.0 + depth * 1.15 * lap));
+  return clamp(focus - 0.85, 0.0, 2.6);
 }
+
 
 /* A soft shoulder instead of a hard clip.
    Everything in here is a real quantity of light, and some of it is genuinely
@@ -368,6 +388,10 @@ void main(){
        colour of whatever is dissolved in it. EXT is that ratio. Everything
        teal about this now falls out of the physics rather than being painted
        on, which is also why it survives the tint being changed. */
+    float steep = clamp((1.0 - nrm.y) * 4.4, 0.0, 1.0);
+    float rel = crestHeight(pW.xz);
+    vec2 drift = vec2(u_time * 0.26, -u_time * 0.20);
+
     vec3 rt = refract(rd, nrm, 0.752);
     if (rt.y > -0.05) rt = normalize(vec3(rd.x, -0.7, rd.z));
     float travel = (pW.y - bedY(pW.xz)) / max(0.10, -rt.y);
@@ -375,9 +399,26 @@ void main(){
     vec3 bed = room(vec3(clamp(fh.x, CEN.x - HALF.x, CEN.x + HALF.x), FLOORY,
                          clamp(fh.z, CEN.z - HALF.z, CEN.z + HALF.z)),
                     vec3(0.0, 1.0, 0.0));
-    bed *= 0.30 + caustic(fh.xz) * 1.1;
-    vec3 EXT = vec3(10.4, 2.48, 1.44);
+    bed *= 0.30 + caustic(fh.xz, travel) * 0.85;
+    /* The ratio is what makes it seawater; the magnitude is only how fast the
+       bed disappears, and at full strength it was taking the bed down to
+       (0.02, 0.13, 0.15) — so the caustics were being computed in full and
+       then absorbed before anything could be seen of them. Six tenths of the
+       way keeps the colour and lets the light on the sand back out, which is
+       the only place caustics are ever visible anyway: the shallows. */
+    vec3 EXT = vec3(10.4, 2.48, 1.44) * 0.62;
     vec3 trans = bed * exp(-travel * EXT);
+
+    /* Entrained air.
+       A crest that is breaking drags bubbles down with it, and they scatter
+       white straight back out of the body before the water has any depth in
+       which to absorb it. This is the half of "foam" that is not on the
+       surface — it is why water under a breaking wave goes pale and opaque
+       rather than staying clear, and it is most of what reads as a simulation
+       rather than as a moving texture. */
+    float aer = smoothstep(0.12, 0.85, rel)
+              * smoothstep(0.38, 0.78, fbm(pW.xz * 5.5 + drift * 1.3));
+    trans += (vec3(0.42) + u_tint * 1.05) * aer * 0.85;
     /* and what the body scatters back on its own, which is all you see once
        the bed is too far down to return anything */
     /* Weighted enough that the three disciplines still read apart. Once the
@@ -398,9 +439,6 @@ void main(){
     water += vec3(1.0, 0.99, 0.97) * pow(nh, 520.0) * 2.4;
     water += vec3(1.0, 0.99, 0.97) * pow(nh, 26.0) * 0.09;
 
-    float steep = clamp((1.0 - nrm.y) * 4.4, 0.0, 1.0);
-    float rel = crestHeight(pW.xz);
-
     /* Light coming up through a crest.
        A wave is thin where it stands up, so the ceiling shines through it and
        the crest glows from inside — the one cue that separates a body of water
@@ -414,13 +452,12 @@ void main(){
        actually breaks. This is the loudest thing in the frame on purpose: foam
        is bright, fully diffuse, and sits on near-black water, and that
        contrast is what no amount of gloss on a smooth swell could buy. */
-    vec2 drift = vec2(u_time * 0.26, -u_time * 0.20);
-    float foam = smoothstep(0.08, 0.82, rel) * (0.40 + 0.60 * smoothstep(0.08, 0.52, steep));
+    float foam = smoothstep(0.02, 0.76, rel) * (0.40 + 0.60 * smoothstep(0.06, 0.48, steep));
     foam *= smoothstep(0.30, 0.70, fbm(pW.xz * 4.2 + drift));
     /* a second, finer band so the foam has its own grain instead of arriving
        as one smooth wash — what breaks it into flecks and streaks */
     foam *= 0.45 + 0.55 * smoothstep(0.25, 0.72, fbm(pW.xz * 11.0 - drift * 1.7));
-    foam = clamp(foam * 3.4, 0.0, 1.0);
+    foam = clamp(foam * 4.2, 0.0, 1.0);
     water = mix(water, vec3(0.95, 0.975, 0.99), foam);
 
     col = water;
