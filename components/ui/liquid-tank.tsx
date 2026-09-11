@@ -29,6 +29,13 @@ uniform float u_level;
 uniform float u_tilt;
 uniform float u_slosh;
 uniform vec3 u_tint;
+uniform vec2 u_cursor;   // pointer, in the same frame the fragment uv uses
+uniform float u_wake;    // how hard it was just moved, 0..1
+
+/* Where the pointer is standing on the water, filled in once at the top of
+   main. height() is read some thirty times per pixel by the march, so this
+   cannot be re-derived inside it. */
+vec2 gWake;
 
 /*
  * A room, not a picture of one; water, not a coloured sheet.
@@ -203,8 +210,22 @@ vec3 room(vec3 p, vec3 n){
 
 /* Amplitude, so the march can bound the surface inside a thin slab and spend
    all its steps where the water actually is. */
-float amplitude(){ return 0.070 + u_slosh * 0.034; }
-float slabAmp(){ return amplitude() * 1.75; }
+/* Sweeping the card really does throw the tank around now.
+   The old coefficient bought a 1.7x swing at full slosh, which is not enough
+   to read as a reaction to anything; this is closer to 3.5x. */
+float amplitude(){ return 0.070 + u_slosh * 0.062; }
+
+/* The ripple the pointer drags behind it, in world units. Deliberately not
+   scaled by amplitude(): a ring that grows with the sloshing is a ring whose
+   size the slab below cannot state exactly, and the slab has to be exact. */
+float wakeAmp(){ return u_wake * 0.075; }
+
+/* The march bounds the surface inside a slab and spends every step inside it,
+   so the slab must bound everything that can lift or drop the water — and
+   bound it tightly, because a slab wider than the water wastes steps and a
+   slab narrower than the water steps straight over crests and punches holes
+   in the surface. h runs to 1.63 above the mean before the trough squash. */
+float slabAmp(){ return amplitude() * 1.70 + wakeAmp(); }
 
 /* A crest, not a sine.
    Squaring a sine that has been lifted into 0..1 keeps the peak and pushes
@@ -230,7 +251,7 @@ float crest(float x){ float s = sin(x) * 0.5 + 0.5; return s * s; }
    the way caustics only ever do in shallow water. The trough of the deepest
    wave still clears it by 0.06. */
 float bedY(vec2 q){
-  return FLOORY + 0.16
+  return FLOORY + 0.14
                 + 0.090 * noise(q * 0.85 + vec2(3.7, 1.3))
                 + 0.030 * noise(q * 2.1 - vec2(1.9, 4.4))
                 + 0.016 * noise(q * 6.5 + vec2(2.2, 0.4));   // sand ripples
@@ -256,11 +277,28 @@ float height(vec2 q){
           + crest(dot(q, vec2(0.74, -0.67)) * 3.3 - t * 1.40) * 0.60
           + crest(dot(q, vec2(-0.52, 0.85)) * 5.6 + t * 2.05) * 0.32;
   h += (noise(q * 3.0 + vec2(t * 0.20, -t * 0.16)) - 0.5) * 1.15;
-  return amplitude() * (h - 0.86);
+  h -= 0.86;
+
+  /* The ring the pointer leaves, spreading outward and dying with range.
+     This is what answers the cursor by *position* rather than by volume: the
+     disturbance starts where the pointer is standing instead of the whole
+     tank merely getting rougher. */
+  float d = length(q - gWake);
+  float total = amplitude() * h
+              + wakeAmp() * sin(d * 13.0 - t * 9.0) * exp(-d * 1.5);
+
+  /* Troughs give less than crests do.
+     A tank thrown about throws water upward; it cannot dig a hole in its own
+     floor. Left symmetric, the amplitude this now reaches would pull the
+     troughs through the sand — the bed sits only about 0.21 under the resting
+     surface — and the water would tear open. Crests keep their full travel and
+     take the drama; troughs are held to just under half. Applied to the sum,
+     so the ring cannot dig past the floor either. */
+  return total > 0.0 ? total : total * 0.48;
 }
 
 float surfaceY(vec2 q){
-  return baseLevel() + u_tilt * q.x * 0.05 + height(q);
+  return baseLevel() + u_tilt * q.x * 0.09 + height(q);
 }
 
 /* Where this point stands relative to the mean surface: about -1 in a trough,
@@ -373,6 +411,11 @@ void main(){
   vec3 ro = vec3(0.0, 0.24, 1.15);
   vec3 rd = normalize(vec3(uv, -1.05));
 
+  /* Cast the pointer's own ray at the resting waterline: where it lands is
+     where the ring starts. Done here, once, before anything reads height(). */
+  vec3 crd = normalize(vec3(u_cursor, -1.05));
+  gWake = (ro + crd * ((baseLevel() - ro.y) / min(crd.y, -0.05))).xz;
+
   vec3 nR; float tR = boxExit(ro, rd, nR);
   vec3 pR = ro + rd * tR;
   vec3 col = room(pR, nR);
@@ -385,10 +428,14 @@ void main(){
     float t0 = max((base + amp - ro.y) / rd.y, 0.0);
     float t1 = min((base - amp - ro.y) / rd.y, tR);
     if (t1 > t0){
-      float dt = (t1 - t0) / 24.0;
+      /* Twenty-eight, not twenty-four. The slab is wider than it was — the
+         waves are half again as tall at full slosh and the wake sits on top
+         of them — and the same step count across a wider band starts stepping
+         over crests, which punches holes in the surface. */
+      float dt = (t1 - t0) / 28.0;
       float tp = t0;
       float dp = 1.0;
-      for (int i = 1; i <= 24; i++){
+      for (int i = 1; i <= 28; i++){
         float t = t0 + dt * float(i);
         vec3 q = ro + rd * t;
         float d = q.y - surfaceY(q.xz);
@@ -734,6 +781,8 @@ export default function LiquidTank({
       tilt: gl.getUniformLocation(prog, "u_tilt"),
       slosh: gl.getUniformLocation(prog, "u_slosh"),
       tint: gl.getUniformLocation(prog, "u_tint"),
+      cursor: gl.getUniformLocation(prog, "u_cursor"),
+      wake: gl.getUniformLocation(prog, "u_wake"),
     };
 
     /* The surface is marched now — 24 samples plus a binary refine per pixel,
@@ -755,21 +804,59 @@ export default function LiquidTank({
     resize();
     window.addEventListener("resize", resize);
 
-    const s = { level: BASE, gulp: 0, slosh: 0.4, tilt: 0, tiltTo: 0, lastX: -1 };
+    const s = {
+      level: BASE,
+      gulp: 0,
+      slosh: 0.4,
+      tilt: 0,
+      tiltTo: 0,
+      lastX: -1,
+      lastY: -1,
+      /** how hard the pointer was just moved; drives the ring it leaves */
+      wake: 0,
+      /** pointer in the frame the shader's own uv uses */
+      cx: 0,
+      cy: 0,
+    };
+
     const onMove = (e: PointerEvent) => {
       const r = box.getBoundingClientRect();
       const x = (e.clientX - r.left) / Math.max(1, r.width);
-      if (s.lastX >= 0) s.slosh = Math.min(1.4, s.slosh + Math.abs(x - s.lastX) * 2.6);
+      const y = (e.clientY - r.top) / Math.max(1, r.height);
+
+      /* Both axes, not just the horizontal one. The rail only ever asked how
+         far across the card you were, so dragging straight up it disturbed
+         nothing at all. */
+      if (s.lastX >= 0) {
+        const moved = Math.hypot(x - s.lastX, y - s.lastY);
+        s.slosh = Math.min(2.4, s.slosh + moved * 6.0);
+        s.wake = Math.min(1.0, s.wake + moved * 8.0);
+      }
       s.lastX = x;
+      s.lastY = y;
       s.tiltTo = Math.max(-1, Math.min(1, (x - 0.5) * 2));
+
+      /* The shader frames off the card's shorter side and counts its y upward
+         from the bottom; the pointer arrives in CSS pixels counting down from
+         the top. Get this wrong and the ring appears mirrored about the middle
+         of the card, which looks like a bug in the water rather than in the
+         arithmetic. */
+      const minDim = Math.max(1, Math.min(r.width, r.height));
+      s.cx = (e.clientX - r.left - r.width / 2) / minDim;
+      s.cy = -(e.clientY - r.top - r.height / 2) / minDim;
     };
+
+    /* The pointer leaving stops it being pushed; it does not flatten the water
+       on the spot. The ring rides out and dies on its own. */
     const onLeave = () => {
       s.lastX = -1;
+      s.lastY = -1;
       s.tiltTo = 0;
     };
     const onDown = () => {
       s.gulp = 1;
-      s.slosh = Math.min(1.4, s.slosh + 0.7);
+      s.slosh = Math.min(2.4, s.slosh + 1.1);
+      s.wake = 1;
     };
     box.addEventListener("pointermove", onMove);
     box.addEventListener("pointerleave", onLeave);
@@ -782,7 +869,10 @@ export default function LiquidTank({
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
-      s.slosh *= Math.exp(-1.5 * dt);
+      /* Slower than it was. At 1.5 the tank had forgotten the gesture before
+         the hand finished making it. */
+      s.slosh *= Math.exp(-1.0 * dt);
+      s.wake *= Math.exp(-2.0 * dt);
       s.gulp *= Math.exp(-1.1 * dt);
       s.tilt += (s.tiltTo - s.tilt) * Math.min(1, dt * 5);
       s.level += (BASE - 0.36 * s.gulp - s.level) * Math.min(1, dt * 5.5);
@@ -807,6 +897,8 @@ export default function LiquidTank({
       gl.uniform1f(u.tilt, s.tilt);
       gl.uniform1f(u.slosh, reduced ? 0.25 : s.slosh);
       gl.uniform3f(u.tint, t[0], t[1], t[2]);
+      gl.uniform2f(u.cursor, s.cx, s.cy);
+      gl.uniform1f(u.wake, reduced ? 0 : s.wake);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
