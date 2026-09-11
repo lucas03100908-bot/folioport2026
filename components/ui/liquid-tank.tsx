@@ -161,19 +161,48 @@ vec3 room(vec3 p, vec3 n){
 
 /* Amplitude, so the march can bound the surface inside a thin slab and spend
    all its steps where the water actually is. */
-float amplitude(){ return 0.030 + u_slosh * 0.022; }
+float amplitude(){ return 0.070 + u_slosh * 0.034; }
+float slabAmp(){ return amplitude() * 1.75; }
+
+/* A crest, not a sine.
+   Squaring a sine that has been lifted into 0..1 keeps the peak and pushes
+   everything else down: narrow pointed crests over broad flat troughs, which
+   is the shape a fluid surface takes and a sine never does. Summed sines gave
+   a rolling quilt — smooth, symmetric, and the reason the pool read as a
+   poured solid rather than as something being thrown around. */
+float crest(float x){ float s = sin(x) * 0.5 + 0.5; return s * s; }
+
+/* The bed is not flat, and that is deliberate.
+   Optical depth is the only reason one patch of sea is a different colour from
+   the next: over a shallow rise the light comes back off the sand and the
+   water goes turquoise, and a metre further out it has nothing to come back
+   from and goes deep blue-green. With a flat floor every ray travelled the
+   same distance and the whole body came back one value — which is most of what
+   "matte" was. */
+float bedY(vec2 q){
+  return FLOORY + 0.20 * noise(q * 0.85 + vec2(3.7, 1.3))
+                + 0.06 * noise(q * 2.1 - vec2(1.9, 4.4));
+}
+
+float baseLevel(){ return FLOORY + u_level * (2.0 * HALF.y) * 0.58; }
 
 float height(vec2 q){
   float t = u_time;
-  float h = sin(q.x * 2.4 + t * 1.05)
-          + sin(q.y * 1.9 - t * 0.82) * 0.85
-          + sin((q.x + q.y * 1.4) * 3.6 + t * 1.75) * 0.50;
-  h += (noise(q * 2.3 + vec2(t * 0.22, -t * 0.17)) - 0.5) * 2.2;
-  return amplitude() * h;
+  float h = crest(q.x * 2.2 + t * 1.00) * 1.00
+          + crest(dot(q, vec2(0.74, -0.67)) * 3.3 - t * 1.40) * 0.60
+          + crest(dot(q, vec2(-0.52, 0.85)) * 5.6 + t * 2.05) * 0.32;
+  h += (noise(q * 3.0 + vec2(t * 0.20, -t * 0.16)) - 0.5) * 1.15;
+  return amplitude() * (h - 0.86);
 }
 
 float surfaceY(vec2 q){
-  return FLOORY + u_level * (2.0 * HALF.y) * 0.58 + u_tilt * q.x * 0.05 + height(q);
+  return baseLevel() + u_tilt * q.x * 0.05 + height(q);
+}
+
+/* Where this point stands relative to the mean surface: about -1 in a trough,
+   about +1 on a crest. Foam and backscatter both key off it. */
+float crestHeight(vec2 q){
+  return (surfaceY(q) - baseLevel()) / (amplitude() * 1.5);
 }
 
 /* The marched surface gives the relief; this gives the material.
@@ -193,10 +222,15 @@ vec3 waterNormal(vec2 q){
   vec3 n = normalize(vec3(h - surfaceY(q + vec2(e, 0.0)), e,
                           h - surfaceY(q + vec2(0.0, e))));
 
+  /* Chop is not uniform. A surface agitated identically everywhere is the one
+     thing real water never is, and evenness at this scale reads as a material
+     rather than as a fluid — so a slow, large field decides where it is rough
+     and where it is nearly glass, and the two drift past each other. */
   vec2 g = vec2(0.0);
-  float amp = 0.105 + u_slosh * 0.075;
+  float agit = 0.45 + 1.05 * noise(q * 0.70 + vec2(u_time * 0.07, -u_time * 0.05));
+  float amp = (0.100 + u_slosh * 0.070) * agit;
   float f = 2.1;
-  for (int i = 0; i < 2; i++){
+  for (int i = 0; i < 3; i++){
     float fi = float(i);
     vec2 w = vec2(u_time * (0.30 + 0.13 * fi), -u_time * (0.24 + 0.10 * fi));
     float e2 = 0.09 / f;
@@ -245,8 +279,8 @@ void main(){
   /* ----------------------------------------------- find the surface -- */
   float hit = -1.0;
   if (rd.y < -0.0005){
-    float amp = amplitude() * 3.6;
-    float base = FLOORY + u_level * (2.0 * HALF.y) * 0.58;
+    float amp = slabAmp();
+    float base = baseLevel();
     float t0 = max((base + amp - ro.y) / rd.y, 0.0);
     float t1 = min((base - amp - ro.y) / rd.y, tR);
     if (t1 > t0){
@@ -302,21 +336,30 @@ void main(){
     refl = mix(refl, u_tint * 0.16,
                smoothstep(0.0, 0.10, surfaceY(pr.xz) - pr.y));
 
-    /* Down through the body to the floor, and what colour survives the trip.
-       Beer-Lambert against (1 - tint) is why the deep parts go saturated and
-       nearly black instead of merely darker: the channels the tint does not
-       carry are the ones the water absorbs. */
+    /* Down through the body to the bed, and what colour survives the trip.
+       This is the part that had been a hack. Absorbing against (1 - tint)
+       makes water that is merely dark; real water is selective, and the ratio
+       is not subtle — it takes red out roughly eight times faster than blue,
+       which is the entire reason the sea is the colour it is and not the
+       colour of whatever is dissolved in it. EXT is that ratio. Everything
+       teal about this now falls out of the physics rather than being painted
+       on, which is also why it survives the tint being changed. */
     vec3 rt = refract(rd, nrm, 0.752);
     if (rt.y > -0.05) rt = normalize(vec3(rd.x, -0.7, rd.z));
-    float travel = (pW.y - FLOORY) / max(0.10, -rt.y);
+    float travel = (pW.y - bedY(pW.xz)) / max(0.10, -rt.y);
     vec3 fh = pW + rt * travel;
     vec3 bed = room(vec3(clamp(fh.x, CEN.x - HALF.x, CEN.x + HALF.x), FLOORY,
                          clamp(fh.z, CEN.z - HALF.z, CEN.z + HALF.z)),
                     vec3(0.0, 1.0, 0.0));
-    bed *= 0.30 + caustic(fh.xz) * 0.9;
-    vec3 sigma = (vec3(1.0) - u_tint) * 3.4 + vec3(2.6);
-    vec3 trans = bed * exp(-travel * sigma);
-    trans = trans * 0.62 + u_tint * (0.02 + 0.08 * exp(-travel * 1.6));
+    bed *= 0.30 + caustic(fh.xz) * 1.1;
+    vec3 EXT = vec3(10.4, 2.48, 1.44);
+    vec3 trans = bed * exp(-travel * EXT);
+    /* and what the body scatters back on its own, which is all you see once
+       the bed is too far down to return anything */
+    /* Weighted enough that the three disciplines still read apart. Once the
+       teal came out of the extinction rather than out of the tint, a light
+       weight here made all three cards the same water. */
+    trans += u_tint * (1.0 - exp(-travel * 3.4)) * 0.55;
 
     vec3 water = mix(trans, refl, F);
 
@@ -331,21 +374,42 @@ void main(){
     water += vec3(1.0, 0.99, 0.97) * pow(nh, 520.0) * 2.4;
     water += vec3(1.0, 0.99, 0.97) * pow(nh, 26.0) * 0.09;
 
-    // where the surface stands up, it aerates and carries its own light
     float steep = clamp((1.0 - nrm.y) * 4.4, 0.0, 1.0);
-    water += (vec3(0.22) + u_tint * 0.85) * smoothstep(0.28, 0.92, steep) * 0.40;
+    float rel = crestHeight(pW.xz);
+
+    /* Light coming up through a crest.
+       A wave is thin where it stands up, so the ceiling shines through it and
+       the crest glows from inside — the one cue that separates a body of water
+       from a sheet of dark glass, and the thing a still image of the sea is
+       always full of. */
+    water += u_tint * smoothstep(0.05, 0.95, rel) * (1.0 - steep * 0.45) * 0.26;
+
+    /* Whitecaps.
+       Foam gathers where the surface is both steep and standing high, and it
+       is patchy rather than continuous, so an advected noise decides where it
+       actually breaks. This is the loudest thing in the frame on purpose: foam
+       is bright, fully diffuse, and sits on near-black water, and that
+       contrast is what no amount of gloss on a smooth swell could buy. */
+    vec2 drift = vec2(u_time * 0.26, -u_time * 0.20);
+    float foam = smoothstep(0.08, 0.82, rel) * (0.40 + 0.60 * smoothstep(0.08, 0.52, steep));
+    foam *= smoothstep(0.30, 0.70, fbm(pW.xz * 4.2 + drift));
+    /* a second, finer band so the foam has its own grain instead of arriving
+       as one smooth wash — what breaks it into flecks and streaks */
+    foam *= 0.45 + 0.55 * smoothstep(0.25, 0.72, fbm(pW.xz * 11.0 - drift * 1.7));
+    foam = clamp(foam * 3.4, 0.0, 1.0);
+    water = mix(water, vec3(0.95, 0.975, 0.99), foam);
 
     col = water;
 
-    // the meniscus, climbing the walls
+    // the meniscus, climbing the walls — foam against the glass, not tint
     float wall = min(HALF.x - abs(pW.x - CEN.x), HALF.z - abs(pW.z - CEN.z));
-    col += (u_tint + vec3(0.32)) * exp(-wall * 22.0) * (0.16 + u_slosh * 0.32);
+    col += (u_tint * 0.5 + vec3(0.42)) * exp(-wall * 22.0) * (0.18 + u_slosh * 0.34);
   } else {
     /* Just above the waterline the pool spills onto the wall. Without it the
        water ends at a drawn line; with it the wall is simply lit by what is
        in front of it, and there is no edge left to see. */
     float sub = surfaceY(pR.xz) - pR.y;
-    if (sub > -0.34 && sub < 0.0) col += u_tint * exp(sub * 9.0) * 0.16;
+    if (sub > -0.34 && sub < 0.0) col += u_tint * exp(sub * 9.0) * 0.30;
   }
 
   gl_FragColor = vec4(shoulder(max(col, 0.0)), 1.0);
@@ -353,8 +417,8 @@ void main(){
 
 const BASE = 0.56;
 
-/** the site accent, used when a caller hands over no tint */
-const DEFAULT_TINT: [number, number, number] = [1.0, 0.28, 0.1];
+/** open water, used when a caller hands over no tint */
+const DEFAULT_TINT: [number, number, number] = [0.05, 0.46, 0.52];
 
 export default function LiquidTank({
   children,

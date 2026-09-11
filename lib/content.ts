@@ -112,9 +112,9 @@ export const projectsFor = (id: CategoryId | "all") =>
  * own.
  */
 export const CATEGORY_TINT: Record<CategoryId, [number, number, number]> = {
-  motion: [0.8, 0.12, 0.1], //   2°  deepest
-  realtime: [1.0, 0.28, 0.1], // 12°  the accent itself
-  ux: [0.98, 0.57, 0.24], //     27°  lightest
+  motion: [0.02, 0.22, 0.40], // 207°  deep water, furthest out
+  realtime: [0.05, 0.46, 0.52], // 187°  open water
+  ux: [0.20, 0.70, 0.56], // 162°  the shallows
 };
 
 /* ------------------------------------------------------------- socials --- */
