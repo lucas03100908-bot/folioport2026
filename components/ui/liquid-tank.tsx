@@ -210,9 +210,31 @@ float crest(float x){ float s = sin(x) * 0.5 + 0.5; return s * s; }
    from and goes deep blue-green. With a flat floor every ray travelled the
    same distance and the whole body came back one value — which is most of what
    "matte" was. */
+/* Shallow, and that is the point.
+   Refraction drags the sampled floor sideways by roughly the water's depth —
+   at half a unit deep and a view this far off vertical that was a third of a
+   dune, so the bed came back as warped cloth rather than as a floor, and no
+   amount of transparency was going to make it read. Brought up to a fifth of
+   a unit the offset halves, the sand holds its shape, and the caustics sharpen
+   the way caustics only ever do in shallow water. The trough of the deepest
+   wave still clears it by 0.06. */
 float bedY(vec2 q){
-  return FLOORY + 0.20 * noise(q * 0.85 + vec2(3.7, 1.3))
-                + 0.06 * noise(q * 2.1 - vec2(1.9, 4.4));
+  return FLOORY + 0.16
+                + 0.090 * noise(q * 0.85 + vec2(3.7, 1.3))
+                + 0.030 * noise(q * 2.1 - vec2(1.9, 4.4))
+                + 0.016 * noise(q * 6.5 + vec2(2.2, 0.4));   // sand ripples
+}
+
+/* The bed has to look like a floor, not like a distance.
+   Seeing through water to something is the whole reason water reads as water
+   rather than as a coloured fill, and "something" has to have form: dunes that
+   catch the light on one side and lose it on the other. This is the bed's own
+   slope, lit from overhead — geometry, not a texture laid on it. */
+float bedShade(vec2 q){
+  float e = 0.05;
+  float g = (bedY(q + vec2(e, 0.0)) - bedY(q - vec2(e, 0.0))) * 0.55
+          - (bedY(q + vec2(0.0, e)) - bedY(q - vec2(0.0, e))) * 0.90;
+  return clamp(0.82 + g * 22.0, 0.50, 1.32);
 }
 
 float baseLevel(){ return FLOORY + u_level * (2.0 * HALF.y) * 0.58; }
@@ -247,11 +269,18 @@ float crestHeight(vec2 q){
    the Fresnel was set. Chop makes neighbouring facets look at very different
    parts of the room — one at the blazing cove, the next at the dim wall by the
    waterline — and it is that variance, not brightness, that reads as liquid. */
-vec3 waterNormal(vec2 q){
+vec3 waterNormal(vec2 q, out vec3 calm){
   float e = 0.014;
   float h = surfaceY(q);
   vec3 n = normalize(vec3(h - surfaceY(q + vec2(e, 0.0)), e,
                           h - surfaceY(q + vec2(0.0, e))));
+  /* The swells alone, kept aside for refraction.
+     Chop this fine belongs on the specular — it is what makes the surface
+     sparkle — but running the refracted ray through it scattered the bed's
+     image per pixel into noise, so there was never going to be a floor down
+     there to see however transparent the water was made. Real ripples do
+     wobble the bottom; they wobble it coherently. */
+  calm = n;
 
   /* Chop is not uniform. A surface agitated identically everywhere is the one
      thing real water never is, and evenness at this scale reads as a material
@@ -259,7 +288,12 @@ vec3 waterNormal(vec2 q){
      and where it is nearly glass, and the two drift past each other. */
   vec2 g = vec2(0.0);
   float agit = 0.45 + 1.05 * noise(q * 0.70 + vec2(u_time * 0.07, -u_time * 0.05));
-  float amp = (0.100 + u_slosh * 0.070) * agit;
+  /* Three octaves, and they can be this fine because they no longer reach
+     the refraction. Water's surface is covered in ripples far smaller than its
+     waves — that density is what makes it sparkle and what separates it from
+     melted glass — and the only reason it had to be given up was that the same
+     normal was scattering the bed. It is not the same normal any more. */
+  float amp = (0.075 + u_slosh * 0.055) * agit;
   float f = 2.1;
   for (int i = 0; i < 3; i++){
     float fi = float(i);
@@ -271,6 +305,8 @@ vec3 waterNormal(vec2 q){
     f *= 2.7;
     amp *= 0.55;
   }
+  /* a touch of the chop reaches the refraction, and no more */
+  calm = normalize(calm + vec3(g.x, 0.0, g.y) * 0.14);
   return normalize(n + vec3(g.x, 0.0, g.y));
 }
 
@@ -291,8 +327,8 @@ float caustic(vec2 q, float depth){
   float lap = (height(q + vec2(e, 0.0)) + height(q - vec2(e, 0.0))
              + height(q + vec2(0.0, e)) + height(q - vec2(0.0, e))
              - 4.0 * h) / (e * e);
-  float focus = 1.0 / max(0.16, abs(1.0 + depth * 1.15 * lap));
-  return clamp(focus - 0.85, 0.0, 2.6);
+  float focus = 1.0 / max(0.16, abs(1.0 + depth * 2.4 * lap));
+  return clamp(focus - 1.05, 0.0, 1.6);
 }
 
 
@@ -355,7 +391,8 @@ void main(){
           && abs(pW.x - CEN.x) < HALF.x && abs(pW.z - CEN.z) < HALF.z;
 
   if (wet){
-    vec3 nrm = waterNormal(pW.xz);
+    vec3 calm;
+    vec3 nrm = waterNormal(pW.xz, calm);
     vec3 v = -rd;
 
     /* Schlick. This is the whole reason the old one looked matte: it was an
@@ -377,7 +414,11 @@ void main(){
        at dry wall. Faded across a band rather than switched: as a hard test it
        drew a clean diagonal line straight across the pool, exactly where the
        reflections crossed the far waterline. */
-    refl = mix(refl, u_tint * 0.16,
+    /* A reflected ray landing below the waterline is looking along the water,
+       not at dry wall — but along the water is not black. At 0.16 of the tint
+       this was dropping near-black streaks across a shallow turquoise pool,
+       which is a thing no sunlit water does. */
+    refl = mix(refl, u_tint * 0.55 + vec3(0.16),
                smoothstep(0.0, 0.10, surfaceY(pr.xz) - pr.y));
 
     /* Down through the body to the bed, and what colour survives the trip.
@@ -392,21 +433,49 @@ void main(){
     float rel = crestHeight(pW.xz);
     vec2 drift = vec2(u_time * 0.26, -u_time * 0.20);
 
-    vec3 rt = refract(rd, nrm, 0.752);
+    vec3 rt = refract(rd, calm, 0.752);
     if (rt.y > -0.05) rt = normalize(vec3(rd.x, -0.7, rd.z));
     float travel = (pW.y - bedY(pW.xz)) / max(0.10, -rt.y);
     vec3 fh = pW + rt * travel;
-    vec3 bed = room(vec3(clamp(fh.x, CEN.x - HALF.x, CEN.x + HALF.x), FLOORY,
+    /* Sand, not plaster.
+       This is the cue the whole thing was missing. A white floor seen through
+       turquoise water returns turquoise, so there was nothing in the frame to
+       say you were looking *through* anything — the bed could be contributing
+       most of the pixel, as it was, and still read as more water. Water reads
+       as water because what is under it is warm and what is in front of it is
+       cool, and the eye separates those instantly. The room's floor keeps its
+       own lighting; only the part under the water is sand, and the dry floor
+       is never in shot. */
+    vec3 bed = vec3(0.97, 0.89, 0.74)
+             * room(vec3(clamp(fh.x, CEN.x - HALF.x, CEN.x + HALF.x), FLOORY,
                          clamp(fh.z, CEN.z - HALF.z, CEN.z + HALF.z)),
                     vec3(0.0, 1.0, 0.0));
-    bed *= 0.30 + caustic(fh.xz, travel) * 0.85;
+    /* Lit, then focused. The floor of a lit room is lit — the caustic is the
+       extra the surface throws onto it, not a mask over it. Multiplying by a
+       term whose base was 0.30 meant the sand spent most of its area at less
+       than a third of the light it should have had, and no reduction in
+       extinction was ever going to make a floor that dark visible. */
+    /* Once the water was shallow enough to see through, the same caustic gain
+       blew the sand straight to white and took the floor back out of the
+       picture the other way. Light on a floor is brighter than the floor, not
+       four times the floor. */
+    bed *= bedShade(fh.xz) * (0.95 + caustic(fh.xz, travel) * 0.45);
     /* The ratio is what makes it seawater; the magnitude is only how fast the
        bed disappears, and at full strength it was taking the bed down to
        (0.02, 0.13, 0.15) — so the caustics were being computed in full and
        then absorbed before anything could be seen of them. Six tenths of the
        way keeps the colour and lets the light on the sand back out, which is
        the only place caustics are ever visible anyway: the shallows. */
-    vec3 EXT = vec3(10.4, 2.48, 1.44) * 0.62;
+    /* Shallow water is transparent. That is not a stylistic choice about how
+       blue to make it — it is the difference between water and ink. */
+    /* Scaled to this tank, not to an ocean.
+       At 0.40 the red channel came back at 14% in the shallows, so the sand
+       arrived as pure cyan and read as glow rather than as a floor. Sand under
+       a metre of water is pale and slightly cyan; it is only under several
+       metres that it goes blue. Measured at 0.26: red survives at about half
+       over a rise and about a tenth in the deep, which is the gradient that
+       makes one body of water look shallow at one end. */
+    vec3 EXT = vec3(10.4, 2.48, 1.44) * 0.26;
     vec3 trans = bed * exp(-travel * EXT);
 
     /* Entrained air.
@@ -418,13 +487,13 @@ void main(){
        rather than as a moving texture. */
     float aer = smoothstep(0.12, 0.85, rel)
               * smoothstep(0.38, 0.78, fbm(pW.xz * 5.5 + drift * 1.3));
-    trans += (vec3(0.42) + u_tint * 1.05) * aer * 0.85;
+    trans += (vec3(0.42) + u_tint * 1.05) * aer * 0.45;
     /* and what the body scatters back on its own, which is all you see once
        the bed is too far down to return anything */
     /* Weighted enough that the three disciplines still read apart. Once the
        teal came out of the extinction rather than out of the tint, a light
        weight here made all three cards the same water. */
-    trans += u_tint * (1.0 - exp(-travel * 3.4)) * 0.55;
+    trans += u_tint * (1.0 - exp(-travel * 5.0)) * 0.36;
 
     vec3 water = mix(trans, refl, F);
 
@@ -436,15 +505,15 @@ void main(){
        under a big soft light actually does. */
     vec3 L = normalize(vec3(0.0, 1.0, -0.24));
     float nh = max(dot(nrm, normalize(L + v)), 0.0);
-    water += vec3(1.0, 0.99, 0.97) * pow(nh, 520.0) * 2.4;
-    water += vec3(1.0, 0.99, 0.97) * pow(nh, 26.0) * 0.09;
+    water += vec3(1.0, 0.99, 0.97) * pow(nh, 480.0) * 3.2;
+    water += vec3(1.0, 0.99, 0.97) * pow(nh, 60.0) * 0.22;
 
     /* Light coming up through a crest.
        A wave is thin where it stands up, so the ceiling shines through it and
        the crest glows from inside — the one cue that separates a body of water
        from a sheet of dark glass, and the thing a still image of the sea is
        always full of. */
-    water += u_tint * smoothstep(0.05, 0.95, rel) * (1.0 - steep * 0.45) * 0.26;
+    water += u_tint * smoothstep(0.05, 0.95, rel) * (1.0 - steep * 0.45) * 0.18;
 
     /* Whitecaps.
        Foam gathers where the surface is both steep and standing high, and it
@@ -452,12 +521,17 @@ void main(){
        actually breaks. This is the loudest thing in the frame on purpose: foam
        is bright, fully diffuse, and sits on near-black water, and that
        contrast is what no amount of gloss on a smooth swell could buy. */
-    float foam = smoothstep(0.02, 0.76, rel) * (0.40 + 0.60 * smoothstep(0.06, 0.48, steep));
-    foam *= smoothstep(0.30, 0.70, fbm(pW.xz * 4.2 + drift));
+    float foam = smoothstep(-0.05, 0.62, rel) * (0.35 + 0.65 * smoothstep(0.05, 0.42, steep));
+    foam *= smoothstep(0.34, 0.66, fbm(pW.xz * 4.2 + drift));
     /* a second, finer band so the foam has its own grain instead of arriving
        as one smooth wash — what breaks it into flecks and streaks */
-    foam *= 0.45 + 0.55 * smoothstep(0.25, 0.72, fbm(pW.xz * 11.0 - drift * 1.7));
-    foam = clamp(foam * 4.2, 0.0, 1.0);
+    foam *= 0.40 + 0.60 * smoothstep(0.25, 0.72, fbm(pW.xz * 11.0 - drift * 1.7));
+    /* a third band, finer again. At a gain that saturated it, foam arrived as
+       one smooth white blob sitting on the crest — the shape of the region it
+       was allowed to cover, not the shape of foam. Broken at three scales it
+       comes apart into flecks and holes, which is what breaking water does. */
+    foam *= 0.52 + 0.48 * smoothstep(0.30, 0.62, noise(pW.xz * 26.0 + drift * 2.4));
+    foam = clamp(foam * 4.4, 0.0, 1.0);
     water = mix(water, vec3(0.95, 0.975, 0.99), foam);
 
     col = water;
