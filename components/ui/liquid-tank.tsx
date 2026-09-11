@@ -549,13 +549,20 @@ void main(){
        bands that crawl up it — which is also what says the water is moving in
        the part of the frame where you cannot see the water. */
     float above = pR.y - surfaceY(pR.xz);
-    if (above > 0.0 && above < 0.42){
+    if (above > 0.0 && above < 0.90){
       /* Kept low and kept short. Reaching three quarters of the way up the
          wall and stretched vertically, this came out as sheets running down
          the plaster — the room read as made of falling water. What a wall
          actually does at this distance is take a little of the colour and a
          little of the movement, in the hand's width above the surface. */
-      float near = exp(-above * 6.0);
+      /* Faded to nothing at the edge of its own window.
+         An exponential cut off at a fixed height does not reach zero there —
+         it was still worth 1.6% of the wall when the branch stopped paying it,
+         and a 1.6% step across a smooth white gradient is a line. Measured at
+         row 255, which is 0.44 above the waterline: exactly where the old
+         cutoff sat. The window now closes on a smoothstep, so the term is
+         genuinely zero by the time the branch ends. */
+      float near = exp(-above * 4.2) * (1.0 - smoothstep(0.30, 0.90, above));
       vec2 wc = abs(nR.x) > 0.5 ? vec2(pR.z, pR.y) : vec2(pR.x, pR.y);
       /* A shimmer, not a caustic. The fbm ridge that draws light on the bed
          draws *lines*, and on a wall — compressed by perspective on the two
@@ -564,11 +571,24 @@ void main(){
          pattern, which is the one thing these walls must not grow. */
       float shimmer = 0.72 + 0.52 * noise(vec2(wc.x * 1.7, wc.y * 1.3)
                                           + vec2(u_time * 0.26, -u_time * 0.19));
-      col += u_tint * near * 0.42 * shimmer;
+      /* and lower at the contact. At full strength the last row of wall
+         before the water came back at 0.96 against 0.63 — a bright hairline
+         drawn along the waterline, which is the other edge you can see. */
+      col += u_tint * near * 0.26 * shimmer;
     }
   }
 
-  gl_FragColor = vec4(shoulder(max(col, 0.0)), 1.0);
+  /* Sub-quantisation dither, and the distinction matters.
+     The grain that was taken out of this room was worth about two and a half
+     display levels — visible texture on a wall, and rightly gone. This is one
+     level, triangular, which is beneath what a display can resolve as grain
+     but is exactly enough to break a contour. Without it the walls quantise
+     into bands: measured down the side wall, twenty-three flat runs four to
+     eight pixels tall, each ending in a one-level step. A smooth gradient with
+     a step in it is a line, and that is the edge that shows. */
+  vec3 outc = shoulder(max(col, 0.0));
+  outc += (hash(gl_FragCoord.xy) - hash(gl_FragCoord.yx + 17.3)) * (1.0 / 255.0);
+  gl_FragColor = vec4(outc, 1.0);
 }`;
 
 const BASE = 0.56;
