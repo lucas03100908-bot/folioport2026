@@ -226,55 +226,126 @@ export default function RulerCarousel({
               className={tall ? "rail-tank rail-tank-tall" : "rail-tank"}
               onClick={() => press(i)}
               label={`${it.title} — ${cta}`}
+              centered={liquid}
+              ink={liquid ? "dark" : "light"}
             >
-              <span className="flex items-start justify-between gap-6">
-                <span className="eyebrow eyebrow-lg text-white/75">
-                  {it.eyebrow}
-                </span>
-                <span className="font-mono text-[13px] tabular-nums text-white/60">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-              </span>
+              {liquid ? (
+                /*
+                 * The chooser: set in the middle, in black.
+                 *
+                 * The card is a lit white room now, so white type pinned to the
+                 * top and bottom edges needed a dark scrim at both ends to be
+                 * read at all — two grey bands across a white gallery. Centred,
+                 * the type sits on the back wall, the one plain field in the
+                 * frame, and black reads there without help: measured 12.3:1
+                 * on the mean across all three disciplines and at least 5.4:1
+                 * on the darkest pixel the caustics leave behind. The site's
+                 * orange measured 2.0:1 on the same wall — it sits at almost
+                 * the wall's own luminance — so it is not used for type here.
+                 * It carries the arrow, which does not have to be read.
+                 *
+                 * Deliberately short: the block has to fit between the
+                 * ceiling line and the waterline — about a third of the card on
+                 * a desktop and only a quarter on a phone — so the index and
+                 * the count share one line, and on a phone the title runs
+                 * smaller and tighter. "Realtime Experience" is the one title
+                 * that wraps there, and at the larger size its two lines
+                 * pushed the block to 35–65%, over the ceiling line and onto
+                 * the water.
+                 *
+                 * No `.eyebrow` class: it is unlayered CSS, and under Tailwind
+                 * v4 unlayered rules beat every utility, so it would force its
+                 * orange straight back over the black.
+                 */
+                <>
+                  <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-black/70 tabular-nums md:text-[12px]">
+                    {String(i + 1).padStart(2, "0")}
+                    <span className="mx-2" aria-hidden>
+                      —
+                    </span>
+                    {it.eyebrow}
+                  </span>
+                  <span className="display mt-2 block text-[clamp(1.55rem,4.4vw,3.4rem)] leading-[0.9] text-balance text-black md:mt-3">
+                    {it.title}
+                  </span>
+                  <span className="mt-2.5 flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.26em] text-black md:mt-4">
+                    {cta}
+                    <svg
+                      width="19"
+                      height="10"
+                      viewBox="0 0 19 10"
+                      aria-hidden
+                      className="text-accent"
+                    >
+                      <path
+                        d="M0 5h15M11.5 1.5 15 5l-3.5 3.5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        fill="none"
+                      />
+                    </svg>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="flex items-start justify-between gap-6">
+                    <span className="eyebrow eyebrow-lg text-white/75">
+                      {it.eyebrow}
+                    </span>
+                    <span className="font-mono text-[13px] tabular-nums text-white/60">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  </span>
 
-              <span className="block">
-                <span className="display block truncate text-[clamp(1.7rem,3.7vw,3rem)] leading-[0.95] text-white">
-                  {it.title}
-                </span>
+                  <span className="block">
+                    <span className="display block truncate text-[clamp(1.7rem,3.7vw,3rem)] leading-[0.95] text-white">
+                      {it.title}
+                    </span>
 
-                {/* Scrolling the rail used to give a name and nothing else, so
+                    {/* Scrolling the rail used to give a name and nothing else, so
                     you had to open a card to learn what it was. The line was
                     already written and sitting unused in the data. Hidden where
                     the card is shortest — a phone on its side has no room. */}
-                {it.blurb ? (
-                  <span
-                    lang="ko"
-                    className="rail-blurb mt-2.5 block max-w-[46ch] text-[12.5px] leading-[1.55] text-white/70 md:text-[13px]"
-                  >
-                    {it.blurb}
+                    {it.blurb ? (
+                      <span
+                        lang="ko"
+                        className="rail-blurb mt-2.5 block max-w-[46ch] text-[12.5px] leading-[1.55] text-white/70 md:text-[13px]"
+                      >
+                        {it.blurb}
+                      </span>
+                    ) : null}
+                    <span className="mt-4 flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.26em] text-white/85">
+                      {cta}
+                      <svg
+                        width="19"
+                        height="10"
+                        viewBox="0 0 19 10"
+                        aria-hidden
+                      >
+                        <path
+                          d="M0 5h15M11.5 1.5 15 5l-3.5 3.5"
+                          stroke="currentColor"
+                          strokeWidth="1.3"
+                          fill="none"
+                        />
+                      </svg>
+                    </span>
                   </span>
-                ) : null}
-                <span className="mt-4 flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.26em] text-white/85">
-                  {cta}
-                  <svg width="19" height="10" viewBox="0 0 19 10" aria-hidden>
-                    <path
-                      d="M0 5h15M11.5 1.5 15 5l-3.5 3.5"
-                      stroke="currentColor"
-                      strokeWidth="1.3"
-                      fill="none"
-                    />
-                  </svg>
-                </span>
-              </span>
+                </>
+              )}
             </LiquidTank>
           </div>
         ))}
-
       </div>
 
       <Rule flipped />
 
       <div className="rail-controls relative mt-9 flex items-center justify-center gap-8">
-        <Step dir={-1} label="Previous" onClick={() => railScrollTo(current() - 1)} />
+        <Step
+          dir={-1}
+          label="Previous"
+          onClick={() => railScrollTo(current() - 1)}
+        />
         <p className="font-mono text-[13px] tracking-[0.24em] text-muted tabular-nums">
           <span data-engine="rail-counter" className="text-ink">
             01
@@ -284,7 +355,11 @@ export default function RulerCarousel({
             {String(items.length).padStart(2, "0")}
           </span>
         </p>
-        <Step dir={1} label="Next" onClick={() => railScrollTo(current() + 1)} />
+        <Step
+          dir={1}
+          label="Next"
+          onClick={() => railScrollTo(current() + 1)}
+        />
       </div>
     </div>
   );

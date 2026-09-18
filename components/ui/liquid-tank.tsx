@@ -390,6 +390,33 @@ float caustic(vec2 q, float depth, float foot){
   return clamp(focus - 1.05, 0.0, 1.6);
 }
 
+/* The same focusing, read off a surface that includes the small ripples.
+   Light thrown onto a wall is decided mostly by the fine chop, not the swells:
+   a swell is a lens the size of the wall and its focus is a broad blob, which
+   on the near side walls came out as amoeba shapes a foot across. The ripples
+   are what break it into the fine braided lines a pool wall actually carries.
+   Kept separate from caustic() because the floor wants the opposite — the
+   ripples there would only scramble light the eye reads through water. */
+float ripple(vec2 q){
+  vec2 w = vec2(u_time * 0.42, -u_time * 0.33);
+  /* One octave, not two. A second one at 17 sat finer than the Laplacian's
+     own step could resolve, and a derivative of something undersampled is
+     noise: the wall turned to glitter. */
+  /* Sized so the ripple's curvature (a·f², about 0.7) matches the swells'
+     rather than hiding under them — below that the lines never break up and
+     the wall goes back to carrying swell-sized blobs. At 7.5 there are still
+     four Laplacian steps per wavelength, so it resolves. */
+  return height(q) + 0.012 * noise(q * 7.5 + w);
+}
+float wallCaustic(vec2 q, float depth, float foot){
+  float e = max(0.030, foot * 2.0);
+  float h = ripple(q);
+  float lap = (ripple(q + vec2(e, 0.0)) + ripple(q - vec2(e, 0.0))
+             + ripple(q + vec2(0.0, e)) + ripple(q - vec2(0.0, e))
+             - 4.0 * h) / (e * e);
+  float focus = 1.0 / max(0.16, abs(1.0 + depth * 2.4 * lap));
+  return clamp(focus - 1.05, 0.0, 1.6);
+}
 
 /* A soft shoulder instead of a hard clip.
    Everything in here is a real quantity of light, and some of it is genuinely
@@ -636,18 +663,47 @@ void main(){
          cutoff sat. The window now closes on a smoothstep, so the term is
          genuinely zero by the time the branch ends. */
       float near = exp(-above * 4.2) * (1.0 - smoothstep(0.30, 0.90, above));
-      vec2 wc = abs(nR.x) > 0.5 ? vec2(pR.z, pR.y) : vec2(pR.x, pR.y);
-      /* A shimmer, not a caustic. The fbm ridge that draws light on the bed
-         draws *lines*, and on a wall — compressed by perspective on the two
-         sides — the lines came out as sheets of flame climbing the plaster.
-         Plain noise instead: the wash moves, and it never resolves into a
-         pattern, which is the one thing these walls must not grow. */
-      float shimmer = 0.72 + 0.52 * noise(vec2(wc.x * 1.7, wc.y * 1.3)
-                                          + vec2(u_time * 0.26, -u_time * 0.19));
-      /* and lower at the contact. At full strength the last row of wall
-         before the water came back at 0.96 against 0.63 — a bright hairline
-         drawn along the waterline, which is the other edge you can see. */
-      col += u_tint * near * 0.26 * shimmer;
+
+      /* The colour the pool throws, flat. It used to carry a noise shimmer for
+         movement; the caustics below are the movement now, and a second
+         moving pattern under them would only muddy both. */
+      col += u_tint * near * 0.24;
+
+      /* Caustics, reflected up off the water onto the wall.
+         The last attempt at this drew an fbm ridge on the plaster, which had
+         nothing to do with the water: it drifted on its own clock and, on the
+         side walls where perspective packs the plaster together, it came out
+         as sheets of flame. This one is lit by the water itself. Light leaving
+         the surface at a shallow angle lands on the wall higher the further
+         out it left from, so a wall point this far above the waterline is
+         looking back at the surface roughly that far into the room — and how
+         bright it is depends on whether that patch of surface is curved like a
+         lens. Same Laplacian the floor caustics are read from. Height on the
+         wall maps to distance across the water, so the bands come out wavy
+         and near-horizontal, the way they do on a real pool wall, and they
+         move exactly when and where the waves under them move. */
+      vec2 into = nR.xz;                         // inward normal: into the room
+      vec2 src = pR.xz + into * (0.10 + above * 1.4);
+      /* capped, or high on the wall every patch of surface reads as past its
+         focus and the net fills in solid */
+      float reach = 0.08 + min(above, 0.45) * 1.5;
+      float wfoot = (tR / (min(u_res.x, u_res.y) * 1.05))
+                  / max(0.12, abs(dot(rd, nR)));
+      float ca = wallCaustic(src, reach, wfoot);
+      /* and where the wall is so foreshortened that a pixel covers more than
+         a band is wide, it cannot show bands at all: it settles to a faint
+         even glow instead of aliasing into streaks */
+      ca = mix(ca, 0.12, smoothstep(0.035, 0.11, wfoot));
+      /* Only the strongest focus, and squared. Taken whole, the broad regions
+         just past focus came back as flat pale fills the size of the wall — the
+         caustic had become the wall's colour instead of light moving over it.
+         Keeping only what sits well above threshold leaves the thin bright
+         lines, and squaring gives them a hot core and a quick falloff. */
+      ca = max(ca - 0.40, 0.0);
+      ca = ca * ca * 1.25;
+      vec3 caCol = vec3(0.92, 1.0, 1.0) * 0.55 + u_tint * 0.65;
+      col += caCol * ca * (1.0 - smoothstep(0.20, 0.80, above))
+                   * exp(-above * 3.2) * 0.42;
     }
   }
 
@@ -677,6 +733,8 @@ export default function LiquidTank({
   className,
   onClick,
   label,
+  centered = false,
+  ink = "light",
 }: {
   children?: React.ReactNode;
   tint?: [number, number, number];
@@ -692,6 +750,15 @@ export default function LiquidTank({
   onClick?: () => void;
   /** what the card announces itself as; only meaningful when it is pressable */
   label?: string;
+  /** stack the content in the middle of the card instead of pinning it to
+      the top and bottom edges */
+  centered?: boolean;
+  /**
+   * Which way the type runs against the render. "light" is white type and
+   * carries the dark scrim that holds it up; "dark" is dark type set straight
+   * onto the lit room, so the scrim — which exists only for white type — goes.
+   */
+  ink?: "light" | "dark";
 }) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -987,7 +1054,7 @@ export default function LiquidTank({
           className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-black/90"
         />
       )}
-      {liquid && (
+      {liquid && ink === "light" && (
         /* The room is a white gallery and the card sets white type at both
            ends of it — the eyebrow against the lit ceiling, the title against
            the pool. Darkening the whole render would just make the room grey,
@@ -1005,7 +1072,14 @@ export default function LiquidTank({
           className="absolute inset-0 h-full w-full"
         />
       )}
-      <span className="relative z-10 flex h-full flex-col justify-between p-7 md:p-10">
+      <span
+        className={cn(
+          "relative z-10 flex h-full flex-col p-7 md:p-10",
+          centered
+            ? "items-center justify-center text-center"
+            : "justify-between",
+        )}
+      >
         {children}
       </span>
     </Tag>

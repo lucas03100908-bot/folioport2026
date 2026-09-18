@@ -9,3 +9,7 @@ next-env.d.ts
 .env.local
 .vercel
 .env*
+
+# local render harnesses — scratch tooling for verifying shaders, never shipped
+/public/__*.html
+/app/api/shotdump/
