@@ -228,28 +228,25 @@ export default function RulerCarousel({
               label={
                 liquid ? `${it.title}, ${it.eyebrow}` : `${it.title} — ${cta}`
               }
-              layout={liquid ? "foot" : "spread"}
+              layout={liquid ? "center" : "spread"}
             >
               {liquid ? (
                 /*
-                 * The chooser: white, centred along the foot of the card, over
-                 * the water.
+                 * The chooser: white, set dead centre.
                  *
-                 * The middle of the card is the back wall of a lit white
-                 * gallery — the brightest open field in the frame — and white
-                 * on it measured about 1.1:1. The water is the one dark ground
-                 * the room has, so the type goes down onto it, still centred
-                 * across the card, with a gradient only across the foot. The
-                 * ceiling and the wall are left exactly as lit as they are.
+                 * The middle of the card is the back wall of a lit gallery, so
+                 * the tank dims softly behind the type (see LiquidTank) —
+                 * otherwise white there measures 1.3:1. The count line is full
+                 * white rather than a tint: at 85% it gave back most of the
+                 * margin the dimming bought.
                  *
-                 * No "Enter": the card is the button, and a word saying so was
-                 * one more line in a small space. No `.eyebrow` class either:
-                 * it is unlayered CSS, and under Tailwind v4 unlayered rules
-                 * beat every utility, so it would force its orange back over
-                 * the white.
+                 * No "Enter": the card is the button. No `.eyebrow` class
+                 * either: it is unlayered CSS, and under Tailwind v4 unlayered
+                 * rules beat every utility, so it would force its orange back
+                 * over the white.
                  */
                 <>
-                  <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-white/85 tabular-nums md:text-[12px]">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-white tabular-nums md:text-[12px]">
                     {String(i + 1).padStart(2, "0")}
                     <span className="mx-2" aria-hidden>
                       —

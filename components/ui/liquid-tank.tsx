@@ -750,10 +750,9 @@ export default function LiquidTank({
   label?: string;
   /**
    * Where the content sits. "spread" pins it to the top and bottom edges;
-   * "foot" stacks it centred along the bottom, down over the water — the one
-   * part of the lit room where white type reads.
+   * "center" stacks it in the middle of the card.
    */
-  layout?: "spread" | "foot";
+  layout?: "spread" | "center";
 }) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -1060,22 +1059,24 @@ export default function LiquidTank({
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.60)_0%,rgba(0,0,0,0.14)_20%,transparent_38%,rgba(0,0,0,0.18)_56%,rgba(0,0,0,0.58)_100%)]"
         />
       )}
-      {liquid && layout === "foot" && (
-        /* Only the foot of the card is darkened: the type is all down there,
-           over the water, and a foreground falling a little darker toward the
-           viewer is what a photograph of a lit room does anyway. The ceiling
-           and the wall stay exactly as lit as the room is.
+      {liquid && layout === "center" && (
+        /* White type set dead centre sits on the back wall of a lit gallery,
+           the brightest open field in the frame: bare, it measured 1.3:1 for
+           the small line and 2.2:1 for the title, which is to say not there.
+           So the room dims softly toward its middle — an ellipse, strongest
+           behind the type and gone well before the edges, so the ceiling, the
+           corners and most of the water keep their light and it reads as the
+           room's own falloff rather than as a patch laid on it.
 
-           Starts at 63%, just under the waterline, so it takes only 5% off
-           the caustics playing on the wall above. Measured for white type at
-           the rows the block occupies, all three disciplines, calm and fully
-           stirred: 8.8:1 median, at least 5.0:1 on 90% of pixels (small type
-           needs 4.5), at least 3.9:1 on 98% (large type needs 3). The first
-           version of this, lighter and starting higher, gave 2.5:1 on the
-           worst tenth — foam and glints landing behind a letter. */
+           Sized by measurement over the rows and columns the type occupies,
+           all three disciplines, calm and fully stirred, worst tenth of
+           pixels: title 6.5:1, count line 4.8:1 on a desktop card. A phone is
+           narrow enough that "Realtime Experience" runs nearly edge to edge,
+           past where the desktop ellipse is strong (4.4:1 at its ends), so a
+           phone gets a wider, flatter one: 6.9:1 and 5.7:1. */
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,transparent_63%,rgba(0,0,0,0.44)_72%,rgba(0,0,0,0.80)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_82%_30%_at_50%_50%,rgba(0,0,0,0.64)_0%,rgba(0,0,0,0.48)_50%,transparent_100%)] md:bg-[radial-gradient(ellipse_56%_34%_at_50%_50%,rgba(0,0,0,0.64)_0%,rgba(0,0,0,0.48)_50%,transparent_100%)]"
         />
       )}
       {liquid && (
@@ -1088,8 +1089,8 @@ export default function LiquidTank({
       <span
         className={cn(
           "relative z-10 flex h-full flex-col p-7 md:p-10",
-          layout === "foot"
-            ? "items-center justify-end pb-8 text-center md:pb-11"
+          layout === "center"
+            ? "items-center justify-center text-center"
             : "justify-between",
         )}
       >
