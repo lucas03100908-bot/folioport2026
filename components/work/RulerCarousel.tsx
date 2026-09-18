@@ -251,32 +251,39 @@ export default function RulerCarousel({
             >
               {liquid ? (
                 /*
-                 * The chooser: white, set dead centre.
+                 * The chooser: white, set dead centre, the name first.
+                 *
+                 * What you choose by is the name; the count is what it holds.
+                 * With the count line on top, the first thing the eye landed
+                 * on after each swipe was a small monospaced line, and the
+                 * name came second. Below the title it reads as the caption
+                 * it is.
+                 *
+                 * The title runs larger from a laptop up (5vw, to 3.9rem). Not
+                 * on a phone: there "Realtime Experience" already fills 91% of
+                 * the line, touches the edge at +10% and breaks onto two lines
+                 * at +15% — measured, not guessed — so the phone keeps its
+                 * size and gains only the reorder.
                  *
                  * The middle of the card is the back wall of a lit gallery, so
-                 * the tank dims softly behind the type (see LiquidTank) —
-                 * otherwise white there measures 1.3:1. The count line is full
-                 * white rather than a tint: at 85% it gave back most of the
-                 * margin the dimming bought.
-                 *
-                 * No "Enter": the card is the button. No `.eyebrow` class
-                 * either: it is unlayered CSS, and under Tailwind v4 unlayered
-                 * rules beat every utility, so it would force its orange back
-                 * over the white.
+                 * the tank dims softly behind the type (see LiquidTank). No
+                 * "Enter": the card is the button. No `.eyebrow` class: it is
+                 * unlayered CSS, and under Tailwind v4 unlayered rules beat
+                 * every utility.
                  */
                 <>
-                  <span className="font-mono text-[12px] font-medium uppercase tracking-[0.22em] text-white tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] md:text-[13px]">
+                  <span
+                    className="display block text-[clamp(1.55rem,5vw,3.9rem)] leading-[0.9] text-balance text-white"
+                    style={CHOOSER_TITLE}
+                  >
+                    {it.title}
+                  </span>
+                  <span className="mt-3 font-mono text-[12px] font-medium uppercase tracking-[0.22em] text-white tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] md:mt-4 md:text-[14px]">
                     {String(i + 1).padStart(2, "0")}
                     <span className="mx-2" aria-hidden>
                       —
                     </span>
                     {it.eyebrow}
-                  </span>
-                  <span
-                    className="display mt-2 block text-[clamp(1.55rem,4.4vw,3.4rem)] leading-[0.9] text-balance text-white md:mt-3"
-                    style={CHOOSER_TITLE}
-                  >
-                    {it.title}
                   </span>
                 </>
               ) : (
