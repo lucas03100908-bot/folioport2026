@@ -390,32 +390,21 @@ float caustic(vec2 q, float depth, float foot){
   return clamp(focus - 1.05, 0.0, 1.6);
 }
 
-/* The same focusing, read off a surface that includes the small ripples.
-   Light thrown onto a wall is decided mostly by the fine chop, not the swells:
-   a swell is a lens the size of the wall and its focus is a broad blob, which
-   on the near side walls came out as amoeba shapes a foot across. The ripples
-   are what break it into the fine braided lines a pool wall actually carries.
-   Kept separate from caustic() because the floor wants the opposite — the
-   ripples there would only scramble light the eye reads through water. */
-float ripple(vec2 q){
-  vec2 w = vec2(u_time * 0.42, -u_time * 0.33);
-  /* One octave, not two. A second one at 17 sat finer than the Laplacian's
-     own step could resolve, and a derivative of something undersampled is
-     noise: the wall turned to glitter. */
-  /* Sized so the ripple's curvature (a·f², about 0.7) matches the swells'
-     rather than hiding under them — below that the lines never break up and
-     the wall goes back to carrying swell-sized blobs. At 7.5 there are still
-     four Laplacian steps per wavelength, so it resolves. */
-  return height(q) + 0.012 * noise(q * 7.5 + w);
-}
-float wallCaustic(vec2 q, float depth, float foot){
-  float e = max(0.030, foot * 2.0);
-  float h = ripple(q);
-  float lap = (ripple(q + vec2(e, 0.0)) + ripple(q - vec2(e, 0.0))
-             + ripple(q + vec2(0.0, e)) + ripple(q - vec2(0.0, e))
+/* How strongly the surface focuses light onto a wall, as a ratio around 1.
+   Above 1 the patch is lensing light together; below 1 it is spreading it
+   apart. Read with a wide step on purpose: the only light in this room is a
+   skylight the size of the ceiling, and an area light that big blurs the
+   caustics it throws — a wall under it carries soft moving bands, never the
+   sharp hairlines direct sun would. No abs() on the denominator either: past
+   focus the lens inverts, and folding that back into brightness is what drew
+   the hard-edged loops. */
+float wallFocus(vec2 q, float reach){
+  float e = 0.075;
+  float h = height(q);
+  float lap = (height(q + vec2(e, 0.0)) + height(q - vec2(e, 0.0))
+             + height(q + vec2(0.0, e)) + height(q - vec2(0.0, e))
              - 4.0 * h) / (e * e);
-  float focus = 1.0 / max(0.16, abs(1.0 + depth * 2.4 * lap));
-  return clamp(focus - 1.05, 0.0, 1.6);
+  return 1.0 / max(0.40, 1.0 + reach * 1.6 * lap);
 }
 
 /* A soft shoulder instead of a hard clip.
@@ -669,41 +658,36 @@ void main(){
          moving pattern under them would only muddy both. */
       col += u_tint * near * 0.24;
 
-      /* Caustics, reflected up off the water onto the wall.
-         The last attempt at this drew an fbm ridge on the plaster, which had
-         nothing to do with the water: it drifted on its own clock and, on the
-         side walls where perspective packs the plaster together, it came out
-         as sheets of flame. This one is lit by the water itself. Light leaving
-         the surface at a shallow angle lands on the wall higher the further
-         out it left from, so a wall point this far above the waterline is
-         looking back at the surface roughly that far into the room — and how
-         bright it is depends on whether that patch of surface is curved like a
-         lens. Same Laplacian the floor caustics are read from. Height on the
-         wall maps to distance across the water, so the bands come out wavy
-         and near-horizontal, the way they do on a real pool wall, and they
-         move exactly when and where the waves under them move. */
-      vec2 into = nR.xz;                         // inward normal: into the room
-      vec2 src = pR.xz + into * (0.10 + above * 1.4);
-      /* capped, or high on the wall every patch of surface reads as past its
-         focus and the net fills in solid */
-      float reach = 0.08 + min(above, 0.45) * 1.5;
+      /* Caustics, reflected up off the water onto the wall — and this time
+         they move light around rather than painting it on.
+
+         Everything about the previous pass read as a graphic laid over the
+         plaster, for three reasons a real wall does not share. The lines were
+         sharp, when the only light here is a ceiling-sized skylight and an
+         area light that large blurs what it throws into soft bands. They were
+         added, when a caustic only redistributes: the bright bands are light
+         taken from the gaps between them, so the gaps go slightly darker and
+         the wall's average stays where it was. And they climbed half the wall,
+         when the pattern lives in a hand's width above the water.
+
+         So: the wall point looks back at the patch of water in front of it,
+         with height mapped to distance across the surface at a steep ratio —
+         a small rise on the wall is a long way across the water, which is
+         what lays real wall caustics down in long, wavy, near-horizontal
+         bands. The patch's focus scales the wall's own light, up and down
+         around 1, inside a narrow band that closes smoothly on itself. */
+      vec2 into = nR.xz;                          // inward normal: into the room
+      vec2 src = pR.xz + into * (0.05 + above * 3.4);
+      float reach = 0.06 + min(above, 0.30) * 1.2;
+      float m = clamp(wallFocus(src, reach) - 1.0, -0.45, 0.9);
+      /* at a steep graze a pixel spans more than a band is tall, so there are
+         no bands to show — the modulation settles to nothing rather than
+         aliasing into streaks on the near side walls */
       float wfoot = (tR / (min(u_res.x, u_res.y) * 1.05))
                   / max(0.12, abs(dot(rd, nR)));
-      float ca = wallCaustic(src, reach, wfoot);
-      /* and where the wall is so foreshortened that a pixel covers more than
-         a band is wide, it cannot show bands at all: it settles to a faint
-         even glow instead of aliasing into streaks */
-      ca = mix(ca, 0.12, smoothstep(0.035, 0.11, wfoot));
-      /* Only the strongest focus, and squared. Taken whole, the broad regions
-         just past focus came back as flat pale fills the size of the wall — the
-         caustic had become the wall's colour instead of light moving over it.
-         Keeping only what sits well above threshold leaves the thin bright
-         lines, and squaring gives them a hot core and a quick falloff. */
-      ca = max(ca - 0.40, 0.0);
-      ca = ca * ca * 1.25;
-      vec3 caCol = vec3(0.92, 1.0, 1.0) * 0.55 + u_tint * 0.65;
-      col += caCol * ca * (1.0 - smoothstep(0.20, 0.80, above))
-                   * exp(-above * 3.2) * 0.42;
+      m *= 1.0 - smoothstep(0.03, 0.09, wfoot);
+      float bandW = exp(-above * 5.0) * (1.0 - smoothstep(0.04, 0.34, above));
+      col *= 1.0 + m * bandW * 0.36;
     }
   }
 

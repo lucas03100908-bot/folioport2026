@@ -225,65 +225,44 @@ export default function RulerCarousel({
               liquid={liquid}
               className={tall ? "rail-tank rail-tank-tall" : "rail-tank"}
               onClick={() => press(i)}
-              label={`${it.title} — ${cta}`}
+              label={
+                liquid ? `${it.title}, ${it.eyebrow}` : `${it.title} — ${cta}`
+              }
               centered={liquid}
               ink={liquid ? "dark" : "light"}
             >
               {liquid ? (
                 /*
-                 * The chooser: set in the middle, in black.
+                 * The chooser: set in the middle, in the site's orange, with
+                 * nothing to tell you to press — the card is the button, and
+                 * a word saying so was one more line fighting for the one
+                 * plain field in the frame.
                  *
-                 * The card is a lit white room now, so white type pinned to the
-                 * top and bottom edges needed a dark scrim at both ends to be
-                 * read at all — two grey bands across a white gallery. Centred,
-                 * the type sits on the back wall, the one plain field in the
-                 * frame, and black reads there without help: measured 12.3:1
-                 * on the mean across all three disciplines and at least 5.4:1
-                 * on the darkest pixel the caustics leave behind. The site's
-                 * orange measured 2.0:1 on the same wall — it sits at almost
-                 * the wall's own luminance — so it is not used for type here.
-                 * It carries the arrow, which does not have to be read.
+                 * Centred, the type sits on the back wall, between the ceiling
+                 * line and the waterline — about a third of the card on a
+                 * desktop and a quarter on a phone. On a phone the title runs
+                 * smaller so "Realtime Experience" holds one line instead of
+                 * wrapping down onto the water.
                  *
-                 * Deliberately short: the block has to fit between the
-                 * ceiling line and the waterline — about a third of the card on
-                 * a desktop and only a quarter on a phone — so the index and
-                 * the count share one line, and on a phone the title runs
-                 * smaller and tighter. "Realtime Experience" is the one title
-                 * that wraps there, and at the larger size its two lines
-                 * pushed the block to 35–65%, over the ceiling line and onto
-                 * the water.
+                 * Contrast is the known cost of the orange. #ff4d1c sits at
+                 * almost the lit wall's own luminance, and measured over that
+                 * wall it reads at roughly 2:1, against 3:1 for large type and
+                 * 4.5:1 for small. A deeper value of the same hue is the fix
+                 * if it proves too faint.
                  *
                  * No `.eyebrow` class: it is unlayered CSS, and under Tailwind
-                 * v4 unlayered rules beat every utility, so it would force its
-                 * orange straight back over the black.
+                 * v4 unlayered rules beat every utility.
                  */
                 <>
-                  <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-black/70 tabular-nums md:text-[12px]">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-accent tabular-nums md:text-[12px]">
                     {String(i + 1).padStart(2, "0")}
                     <span className="mx-2" aria-hidden>
                       —
                     </span>
                     {it.eyebrow}
                   </span>
-                  <span className="display mt-2 block text-[clamp(1.55rem,4.4vw,3.4rem)] leading-[0.9] text-balance text-black md:mt-3">
+                  <span className="display mt-2 block text-[clamp(1.55rem,4.4vw,3.4rem)] leading-[0.9] text-balance text-accent md:mt-3">
                     {it.title}
-                  </span>
-                  <span className="mt-2.5 flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.26em] text-black md:mt-4">
-                    {cta}
-                    <svg
-                      width="19"
-                      height="10"
-                      viewBox="0 0 19 10"
-                      aria-hidden
-                      className="text-accent"
-                    >
-                      <path
-                        d="M0 5h15M11.5 1.5 15 5l-3.5 3.5"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        fill="none"
-                      />
-                    </svg>
                   </span>
                 </>
               ) : (
