@@ -390,21 +390,25 @@ float caustic(vec2 q, float depth, float foot){
   return clamp(focus - 1.05, 0.0, 1.6);
 }
 
-/* How strongly the surface focuses light onto a wall, as a ratio around 1.
-   Above 1 the patch is lensing light together; below 1 it is spreading it
-   apart. Read with a wide step on purpose: the only light in this room is a
-   skylight the size of the ceiling, and an area light that big blurs the
-   caustics it throws — a wall under it carries soft moving bands, never the
-   sharp hairlines direct sun would. No abs() on the denominator either: past
-   focus the lens inverts, and folding that back into brightness is what drew
-   the hard-edged loops. */
-float wallFocus(vec2 q, float reach){
-  float e = 0.075;
-  float h = height(q);
-  float lap = (height(q + vec2(e, 0.0)) + height(q - vec2(e, 0.0))
-             + height(q + vec2(0.0, e)) + height(q - vec2(0.0, e))
-             - 4.0 * h) / (e * e);
-  return 1.0 / max(0.40, 1.0 + reach * 1.6 * lap);
+/* A caustic net: light under a moving surface, as the braided curved cells
+   it actually forms.
+   The domain is warped by itself four times over, each pass at a different
+   rate, and the brightness is how close a point lands to the folds — which is
+   what a caustic is, a fold in where the light has been sent. No mod() and no
+   tiling: the usual form of this wraps the plane to make it tileable, and the
+   seams of that wrap are straight lines on a square grid, which is the one
+   shape light through water never makes. Returns 0..1, bright on the lines. */
+float causticNet(vec2 p, float t){
+  vec2 i = p;
+  float c = 1.0;
+  for (int n = 0; n < 4; n++){
+    float tt = t * (1.0 - 3.5 / float(n + 1));
+    i = p + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
+    c += 1.0 / length(vec2(p.x / (sin(i.x + tt) / 0.005),
+                           p.y / (cos(i.y + tt) / 0.005)));
+  }
+  c = 1.17 - pow(c / 4.0, 1.4);
+  return clamp(c, 0.0, 1.0);
 }
 
 /* A soft shoulder instead of a hard clip.
@@ -658,36 +662,47 @@ void main(){
          moving pattern under them would only muddy both. */
       col += u_tint * near * 0.24;
 
-      /* Caustics, reflected up off the water onto the wall — and this time
-         they move light around rather than painting it on.
+      /* Caustics thrown up off the water onto the wall.
 
-         Everything about the previous pass read as a graphic laid over the
-         plaster, for three reasons a real wall does not share. The lines were
-         sharp, when the only light here is a ceiling-sized skylight and an
-         area light that large blurs what it throws into soft bands. They were
-         added, when a caustic only redistributes: the bright bands are light
-         taken from the gaps between them, so the gaps go slightly darker and
-         the wall's average stays where it was. And they climbed half the wall,
-         when the pattern lives in a hand's width above the water.
+         The pass before this lit a band along the foot of each wall with a
+         dead-straight top edge, running the full length of the wall and boxed
+         in by the corners — a rectangle glued to every wall, with blurred
+         horizontal smudges inside it. Nothing about that is what light off
+         water does. This one is a net of curved lines, and three things keep
+         it from reading as a strip:
 
-         So: the wall point looks back at the patch of water in front of it,
-         with height mapped to distance across the surface at a steep ratio —
-         a small rise on the wall is a long way across the water, which is
-         what lays real wall caustics down in long, wavy, near-horizontal
-         bands. The patch's focus scales the wall's own light, up and down
-         around 1, inside a narrow band that closes smoothly on itself. */
-      vec2 into = nR.xz;                          // inward normal: into the room
-      vec2 src = pR.xz + into * (0.05 + above * 3.4);
-      float reach = 0.06 + min(above, 0.30) * 1.2;
-      float m = clamp(wallFocus(src, reach) - 1.0, -0.45, 0.9);
-      /* at a steep graze a pixel spans more than a band is tall, so there are
-         no bands to show — the modulation settles to nothing rather than
-         aliasing into streaks on the near side walls */
+           - it is anchored to the moving waterline ('above', not height in
+             the room), so the whole pattern rides up and down with the swell
+             directly below it;
+           - its upper edge wanders — perturbed along the wall, so it reaches
+             higher in some places than others instead of stopping on a line;
+           - its strength varies along the wall too, so there are places it is
+             bright and places it has almost gone.
+
+         Stretched about two and a half times along the wall, because light
+         leaving a near-horizontal surface lands on a vertical one smeared out
+         sideways. It runs faster when the tank is being stirred. It modulates
+         the wall's own light rather than being painted over it — a caustic
+         only moves light around, so the gaps between the lines go a shade
+         darker than the wall and the average stays where it was. */
+      vec2 wc = abs(nR.x) > 0.5 ? vec2(pR.z, pR.y) : vec2(pR.x, pR.y);
+      float tq = u_time * (0.55 + u_slosh * 0.30);
+      vec2 cp = vec2(wc.x * 4.2, above * 10.5) - 250.0;
+      float net = causticNet(cp, tq);
+      net = pow(net, 3.0);                 // soft lines: an area light blurs them
+      float edge = 0.36 + 0.16 * (noise(vec2(wc.x * 1.9, u_time * 0.12)) - 0.5) * 2.0;
+      float reachW = 1.0 - smoothstep(0.02, edge, above);
+      float along = 0.55 + 0.45 * noise(vec2(wc.x * 0.9 + 7.3, u_time * 0.08));
+      /* where a pixel spans more than a line is wide there are no lines left
+         to draw, so the net fades out gradually rather than aliasing — over a
+         wide range, so that fade cannot become a vertical edge of its own */
       float wfoot = (tR / (min(u_res.x, u_res.y) * 1.05))
                   / max(0.12, abs(dot(rd, nR)));
-      m *= 1.0 - smoothstep(0.03, 0.09, wfoot);
-      float bandW = exp(-above * 5.0) * (1.0 - smoothstep(0.04, 0.34, above));
-      col *= 1.0 + m * bandW * 0.36;
+      float lodW = 1.0 - smoothstep(0.02, 0.16, wfoot);
+      /* The gaps give up only a little. Taken down harder, at card size the
+         grey between the lines read as smoke drifting up the wall rather
+         than as light on it. */
+      col *= 1.0 + (net * 1.45 - 0.06) * reachW * along * lodW * 0.62;
     }
   }
 
@@ -717,8 +732,7 @@ export default function LiquidTank({
   className,
   onClick,
   label,
-  centered = false,
-  ink = "light",
+  layout = "spread",
 }: {
   children?: React.ReactNode;
   tint?: [number, number, number];
@@ -734,15 +748,12 @@ export default function LiquidTank({
   onClick?: () => void;
   /** what the card announces itself as; only meaningful when it is pressable */
   label?: string;
-  /** stack the content in the middle of the card instead of pinning it to
-      the top and bottom edges */
-  centered?: boolean;
   /**
-   * Which way the type runs against the render. "light" is white type and
-   * carries the dark scrim that holds it up; "dark" is dark type set straight
-   * onto the lit room, so the scrim — which exists only for white type — goes.
+   * Where the content sits. "spread" pins it to the top and bottom edges;
+   * "foot" stacks it centred along the bottom, down over the water — the one
+   * part of the lit room where white type reads.
    */
-  ink?: "light" | "dark";
+  layout?: "spread" | "foot";
 }) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -1038,7 +1049,7 @@ export default function LiquidTank({
           className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-black/90"
         />
       )}
-      {liquid && ink === "light" && (
+      {liquid && layout === "spread" && (
         /* The room is a white gallery and the card sets white type at both
            ends of it — the eyebrow against the lit ceiling, the title against
            the pool. Darkening the whole render would just make the room grey,
@@ -1047,6 +1058,24 @@ export default function LiquidTank({
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.60)_0%,rgba(0,0,0,0.14)_20%,transparent_38%,rgba(0,0,0,0.18)_56%,rgba(0,0,0,0.58)_100%)]"
+        />
+      )}
+      {liquid && layout === "foot" && (
+        /* Only the foot of the card is darkened: the type is all down there,
+           over the water, and a foreground falling a little darker toward the
+           viewer is what a photograph of a lit room does anyway. The ceiling
+           and the wall stay exactly as lit as the room is.
+
+           Starts at 63%, just under the waterline, so it takes only 5% off
+           the caustics playing on the wall above. Measured for white type at
+           the rows the block occupies, all three disciplines, calm and fully
+           stirred: 8.8:1 median, at least 5.0:1 on 90% of pixels (small type
+           needs 4.5), at least 3.9:1 on 98% (large type needs 3). The first
+           version of this, lighter and starting higher, gave 2.5:1 on the
+           worst tenth — foam and glints landing behind a letter. */
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,transparent_63%,rgba(0,0,0,0.44)_72%,rgba(0,0,0,0.80)_100%)]"
         />
       )}
       {liquid && (
@@ -1059,8 +1088,8 @@ export default function LiquidTank({
       <span
         className={cn(
           "relative z-10 flex h-full flex-col p-7 md:p-10",
-          centered
-            ? "items-center justify-center text-center"
+          layout === "foot"
+            ? "items-center justify-end pb-8 text-center md:pb-11"
             : "justify-between",
         )}
       >

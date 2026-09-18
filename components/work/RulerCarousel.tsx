@@ -228,40 +228,35 @@ export default function RulerCarousel({
               label={
                 liquid ? `${it.title}, ${it.eyebrow}` : `${it.title} — ${cta}`
               }
-              centered={liquid}
-              ink={liquid ? "dark" : "light"}
+              layout={liquid ? "foot" : "spread"}
             >
               {liquid ? (
                 /*
-                 * The chooser: set in the middle, in the site's orange, with
-                 * nothing to tell you to press — the card is the button, and
-                 * a word saying so was one more line fighting for the one
-                 * plain field in the frame.
+                 * The chooser: white, centred along the foot of the card, over
+                 * the water.
                  *
-                 * Centred, the type sits on the back wall, between the ceiling
-                 * line and the waterline — about a third of the card on a
-                 * desktop and a quarter on a phone. On a phone the title runs
-                 * smaller so "Realtime Experience" holds one line instead of
-                 * wrapping down onto the water.
+                 * The middle of the card is the back wall of a lit white
+                 * gallery — the brightest open field in the frame — and white
+                 * on it measured about 1.1:1. The water is the one dark ground
+                 * the room has, so the type goes down onto it, still centred
+                 * across the card, with a gradient only across the foot. The
+                 * ceiling and the wall are left exactly as lit as they are.
                  *
-                 * Contrast is the known cost of the orange. #ff4d1c sits at
-                 * almost the lit wall's own luminance, and measured over that
-                 * wall it reads at roughly 2:1, against 3:1 for large type and
-                 * 4.5:1 for small. A deeper value of the same hue is the fix
-                 * if it proves too faint.
-                 *
-                 * No `.eyebrow` class: it is unlayered CSS, and under Tailwind
-                 * v4 unlayered rules beat every utility.
+                 * No "Enter": the card is the button, and a word saying so was
+                 * one more line in a small space. No `.eyebrow` class either:
+                 * it is unlayered CSS, and under Tailwind v4 unlayered rules
+                 * beat every utility, so it would force its orange back over
+                 * the white.
                  */
                 <>
-                  <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-accent tabular-nums md:text-[12px]">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-white/85 tabular-nums md:text-[12px]">
                     {String(i + 1).padStart(2, "0")}
                     <span className="mx-2" aria-hidden>
                       —
                     </span>
                     {it.eyebrow}
                   </span>
-                  <span className="display mt-2 block text-[clamp(1.55rem,4.4vw,3.4rem)] leading-[0.9] text-balance text-accent md:mt-3">
+                  <span className="display mt-2 block text-[clamp(1.55rem,4.4vw,3.4rem)] leading-[0.9] text-balance text-white md:mt-3">
                     {it.title}
                   </span>
                 </>
