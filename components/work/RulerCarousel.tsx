@@ -5,6 +5,25 @@ import LiquidTank from "@/components/ui/liquid-tank";
 import { getLenis, railScrollTo } from "@/components/ScrollEngine";
 import { clamp, railStride, view } from "@/lib/state";
 
+/**
+ * The chooser title's letter-spacing and shadow, inline because `.display`
+ * is unlayered CSS that sets its own letter-spacing, and under Tailwind v4 an
+ * unlayered rule beats any tracking utility.
+ *
+ * Fiona is a Didone: its hairlines are a pixel or two wide, and over a lit,
+ * moving room they break up well before the thick strokes do, which is why
+ * the title read poorly even where its contrast ratio passed — the ratio
+ * assumes solid shapes. Opened up slightly, the letters stop crowding their
+ * own hairlines; the shadow is a close one-pixel edge that holds each
+ * hairline against the ground plus a soft wide falloff that separates the
+ * word from whatever light moves behind it. Kept low enough to read as depth
+ * rather than as a drop shadow.
+ */
+const CHOOSER_TITLE = {
+  letterSpacing: "0.02em",
+  textShadow: "0 1px 1px rgba(0,0,0,0.30), 0 0 18px rgba(0,0,0,0.32)",
+} as const;
+
 /** when the last horizontal drag moved the rail, so a tap can be told apart */
 let swipedAt = 0;
 
@@ -246,14 +265,17 @@ export default function RulerCarousel({
                  * over the white.
                  */
                 <>
-                  <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-white tabular-nums md:text-[12px]">
+                  <span className="font-mono text-[12px] font-medium uppercase tracking-[0.22em] text-white tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] md:text-[13px]">
                     {String(i + 1).padStart(2, "0")}
                     <span className="mx-2" aria-hidden>
                       —
                     </span>
                     {it.eyebrow}
                   </span>
-                  <span className="display mt-2 block text-[clamp(1.55rem,4.4vw,3.4rem)] leading-[0.9] text-balance text-white md:mt-3">
+                  <span
+                    className="display mt-2 block text-[clamp(1.55rem,4.4vw,3.4rem)] leading-[0.9] text-balance text-white md:mt-3"
+                    style={CHOOSER_TITLE}
+                  >
                     {it.title}
                   </span>
                 </>

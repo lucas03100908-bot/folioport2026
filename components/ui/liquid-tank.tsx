@@ -31,6 +31,7 @@ uniform float u_slosh;
 uniform vec3 u_tint;
 uniform vec2 u_cursor;   // pointer, in the same frame the fragment uv uses
 uniform float u_wake;    // how hard it was just moved, 0..1
+uniform float u_quiet;   // 1 when type is set over the middle of the card
 
 /* Where the pointer is standing on the water, filled in once at the top of
    main. height() is read some thirty times per pixel by the march, so this
@@ -702,7 +703,16 @@ void main(){
       /* The gaps give up only a little. Taken down harder, at card size the
          grey between the lines read as smoke drifting up the wall rather
          than as light on it. */
-      col *= 1.0 + (net * 1.45 - 0.06) * reachW * along * lodW * 0.62;
+      /* Kept off the middle of the frame when type is set there. Fiona's
+         hairlines are a pixel or two wide, and a line of moving light passing
+         behind one breaks it — the caustic band reached 0.2 to 0.5 above the
+         water, and the title sits 0.18 to 0.6 above it, so they crossed on
+         every card. The light still plays out to either side and fades in
+         well before the letters. */
+      float hushE = length(vec2(uv.x / 0.80, (uv.y + 0.02) / 0.17));
+      float hush = u_quiet * (1.0 - smoothstep(0.70, 1.20, hushE));
+      col *= 1.0 + (net * 1.45 - 0.06) * reachW * along * lodW * 0.62
+                 * (1.0 - hush * 0.9);
     }
   }
 
@@ -761,6 +771,9 @@ export default function LiquidTank({
   // a missing tint must not take the render loop down with it
   const tintRef = useRef<[number, number, number]>(tint ?? DEFAULT_TINT);
   tintRef.current = tint ?? DEFAULT_TINT;
+  // type in the middle of the card asks the render to keep the middle calm
+  const quietRef = useRef(layout === "center" ? 1 : 0);
+  quietRef.current = layout === "center" ? 1 : 0;
 
   useEffect(() => {
     const el = canvas.current;
@@ -844,6 +857,7 @@ export default function LiquidTank({
       tint: gl.getUniformLocation(prog, "u_tint"),
       cursor: gl.getUniformLocation(prog, "u_cursor"),
       wake: gl.getUniformLocation(prog, "u_wake"),
+      quiet: gl.getUniformLocation(prog, "u_quiet"),
     };
 
 /* Resolution goes where it is being looked at.
@@ -986,6 +1000,7 @@ export default function LiquidTank({
       gl.uniform3f(u.tint, t[0], t[1], t[2]);
       gl.uniform2f(u.cursor, s.cx, s.cy);
       gl.uniform1f(u.wake, reduced ? 0 : s.wake);
+      gl.uniform1f(u.quiet, quietRef.current);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -1073,10 +1088,15 @@ export default function LiquidTank({
            pixels: title 6.5:1, count line 4.8:1 on a desktop card. A phone is
            narrow enough that "Realtime Experience" runs nearly edge to edge,
            past where the desktop ellipse is strong (4.4:1 at its ends), so a
-           phone gets a wider, flatter one: 6.9:1 and 5.7:1. */
+           phone gets a wider, flatter one: 6.9:1 and 5.7:1.
+
+           Nearly flat across its core (0.62 falling only to 0.58 halfway
+           out) rather than a slope: under a slope the left and right ends of
+           a long title sat on visibly lighter ground than its middle, and an
+           uneven ground under hairline type reads as the type fading. */
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_82%_30%_at_50%_50%,rgba(0,0,0,0.64)_0%,rgba(0,0,0,0.48)_50%,transparent_100%)] md:bg-[radial-gradient(ellipse_56%_34%_at_50%_50%,rgba(0,0,0,0.64)_0%,rgba(0,0,0,0.48)_50%,transparent_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_82%_30%_at_50%_50%,rgba(0,0,0,0.62)_0%,rgba(0,0,0,0.58)_50%,transparent_100%)] md:bg-[radial-gradient(ellipse_58%_34%_at_50%_50%,rgba(0,0,0,0.62)_0%,rgba(0,0,0,0.58)_50%,transparent_100%)]"
         />
       )}
       {liquid && (
