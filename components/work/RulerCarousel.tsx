@@ -251,41 +251,42 @@ export default function RulerCarousel({
             >
               {liquid ? (
                 /*
-                 * The chooser: white, set dead centre, the name first.
+                 * The chooser: white, the name first, the count hung beneath
+                 * it on the name's own left edge.
                  *
-                 * What you choose by is the name; the count is what it holds.
-                 * With the count line on top, the first thing the eye landed
-                 * on after each swipe was a small monospaced line, and the
-                 * name came second. Below the title it reads as the caption
-                 * it is.
+                 * The title is what is centred; the count hangs from its left
+                 * edge and takes no width of its own (w-0, no wrap), so it
+                 * starts exactly where the title's first letter does and runs
+                 * on past it if it is longer. Centring the pair instead let the
+                 * count set the width whenever it was the longer of the two —
+                 * "UX·UI" ended up at 25–45% of the card, well left of centre.
                  *
-                 * The title runs larger from a laptop up (5vw, to 3.9rem). Not
-                 * on a phone: there "Realtime Experience" already fills 91% of
-                 * the line, touches the edge at +10% and breaks onto two lines
-                 * at +15% — measured, not guessed — so the phone keeps its
-                 * size and gains only the reorder.
+                 * Sizes are up everywhere: 28px on a phone, 57.8 at 1014 and
+                 * 70.4 at 1440. On a phone that only fits because the card
+                 * gives up side padding in this layout (see LiquidTank):
+                 * "Realtime Experience" already filled 91% of the line and
+                 * broke onto two at +15% with the old padding.
                  *
                  * The middle of the card is the back wall of a lit gallery, so
-                 * the tank dims softly behind the type (see LiquidTank). No
-                 * "Enter": the card is the button. No `.eyebrow` class: it is
-                 * unlayered CSS, and under Tailwind v4 unlayered rules beat
-                 * every utility.
+                 * the tank dims softly behind the type. No "Enter": the card
+                 * is the button. No `.eyebrow` class: it is unlayered CSS, and
+                 * under Tailwind v4 unlayered rules beat every utility.
                  */
-                <>
+                <span className="inline-flex flex-col items-start text-left">
                   <span
-                    className="display block text-[clamp(1.55rem,5vw,3.9rem)] leading-[0.9] text-balance text-white"
+                    className="display block text-[clamp(1.75rem,5.7vw,4.4rem)] leading-[0.9] text-white"
                     style={CHOOSER_TITLE}
                   >
                     {it.title}
                   </span>
-                  <span className="mt-3 font-mono text-[12px] font-medium uppercase tracking-[0.22em] text-white tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] md:mt-4 md:text-[14px]">
+                  <span className="mt-3 w-0 whitespace-nowrap font-mono text-[13px] font-medium uppercase tracking-[0.22em] text-white tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] md:mt-4 md:text-[16px]">
                     {String(i + 1).padStart(2, "0")}
                     <span className="mx-2" aria-hidden>
                       —
                     </span>
                     {it.eyebrow}
                   </span>
-                </>
+                </span>
               ) : (
                 <>
                   <span className="flex items-start justify-between gap-6">

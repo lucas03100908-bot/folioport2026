@@ -1093,10 +1093,15 @@ export default function LiquidTank({
            Nearly flat across its core (0.62 falling only to 0.58 halfway
            out) rather than a slope: under a slope the left and right ends of
            a long title sat on visibly lighter ground than its middle, and an
-           uneven ground under hairline type reads as the type fading. */
+           uneven ground under hairline type reads as the type fading.
+
+           Widened on a desktop (68% by 36%) once the title grew to 57.8px at
+           1014 and started reaching 13-87% of the card: at the old width its
+           ends sat out in the falloff, and the worst 2% of title pixels fell
+           to 3.9:1. Now 5.2:1, with the count line's worst tenth at 9.0:1. */
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_82%_30%_at_50%_50%,rgba(0,0,0,0.62)_0%,rgba(0,0,0,0.58)_50%,transparent_100%)] md:bg-[radial-gradient(ellipse_58%_34%_at_50%_50%,rgba(0,0,0,0.62)_0%,rgba(0,0,0,0.58)_50%,transparent_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_82%_30%_at_50%_50%,rgba(0,0,0,0.62)_0%,rgba(0,0,0,0.58)_50%,transparent_100%)] md:bg-[radial-gradient(ellipse_68%_36%_at_50%_50%,rgba(0,0,0,0.62)_0%,rgba(0,0,0,0.58)_50%,transparent_100%)]"
         />
       )}
       {liquid && (
@@ -1108,10 +1113,14 @@ export default function LiquidTank({
       )}
       <span
         className={cn(
-          "relative z-10 flex h-full flex-col p-7 md:p-10",
+          "relative z-10 flex h-full flex-col",
+          /* Centred type gives up side padding on a phone. A title that has to
+             hold one line across a 330px card needs the width more than the
+             card needs a margin it is not using — nothing else sits at the
+             sides in this layout. */
           layout === "center"
-            ? "items-center justify-center text-center"
-            : "justify-between",
+            ? "items-center justify-center px-4 py-7 text-center md:p-10"
+            : "justify-between p-7 md:p-10",
         )}
       >
         {children}
