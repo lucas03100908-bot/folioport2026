@@ -32,6 +32,7 @@ uniform vec3 u_tint;
 uniform vec2 u_cursor;   // pointer, in the same frame the fragment uv uses
 uniform float u_wake;    // how hard it was just moved, 0..1
 uniform float u_quiet;   // 1 when type is set over the middle of the card
+uniform float u_cphase;  // the wall caustics' clock, integrated on the CPU
 
 /* Where the pointer is standing on the water, filled in once at the top of
    main. height() is read some thirty times per pixel by the march, so this
@@ -735,7 +736,14 @@ void main(){
          only moves light around, so the gaps between the lines go a shade
          darker than the wall and the average stays where it was. */
       vec2 wc = abs(nR.x) > 0.5 ? vec2(pR.z, pR.y) : vec2(pR.x, pR.y);
-      float tq = u_time * (0.55 + u_slosh * 0.30);
+      /* Its own clock, integrated frame by frame on the CPU — not u_time
+         multiplied by a speed. u_time is seconds since the page loaded, so
+         u_time * speed moves the whole pattern by u_time * (change in speed)
+         the instant the speed changes: a stir that raised the speed by 0.4
+         threw it 7 radians a minute in and 36 five minutes in. The net did not
+         speed up, it teleported, and worse the longer the page was open —
+         which is the stutter. An integrated phase can only ever change rate. */
+      float tq = u_cphase;
       vec2 cp = vec2(wc.x * 4.2, above * 10.5) - 250.0;
       float net = causticNet(cp, tq);
       net = pow(net, 3.0);                 // soft lines: an area light blurs them
@@ -906,6 +914,7 @@ export default function LiquidTank({
       cursor: gl.getUniformLocation(prog, "u_cursor"),
       wake: gl.getUniformLocation(prog, "u_wake"),
       quiet: gl.getUniformLocation(prog, "u_quiet"),
+      cphase: gl.getUniformLocation(prog, "u_cphase"),
     };
 
 /* Resolution goes where it is being looked at.
@@ -955,6 +964,9 @@ export default function LiquidTank({
       /** pointer in the frame the shader's own uv uses */
       cx: 0,
       cy: 0,
+      /** the wall caustics' clock and the rate it runs at, both eased */
+      cphase: 0,
+      crate: 0.55,
     };
 
     const onMove = (e: PointerEvent) => {
@@ -1014,6 +1026,12 @@ export default function LiquidTank({
       s.wake *= Math.exp(-2.0 * dt);
       s.gulp *= Math.exp(-1.1 * dt);
       s.tilt += (s.tiltTo - s.tilt) * Math.min(1, dt * 5);
+      /* The caustics run faster while the tank is stirred, but the rate eases
+         toward its target over about half a second rather than following the
+         slosh, which jumps on every pointer event. A little quicker when
+         stirred, not twice as fast: 0.22 per unit of slosh, down from 0.30. */
+      s.crate += (0.55 + s.slosh * 0.22 - s.crate) * Math.min(1, dt * 2.0);
+      s.cphase += s.crate * dt;
       s.level += (BASE - 0.36 * s.gulp - s.level) * Math.min(1, dt * 5.5);
 
       if (gl.isContextLost()) return;
@@ -1049,6 +1067,7 @@ export default function LiquidTank({
       gl.uniform2f(u.cursor, s.cx, s.cy);
       gl.uniform1f(u.wake, reduced ? 0 : s.wake);
       gl.uniform1f(u.quiet, quietRef.current);
+      gl.uniform1f(u.cphase, reduced ? 1.1 : s.cphase);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
