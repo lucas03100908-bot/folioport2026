@@ -251,21 +251,19 @@ export default function RulerCarousel({
             >
               {liquid ? (
                 /*
-                 * The chooser: white, the name first, the count hung beneath
-                 * it on the name's own left edge.
+                 * The chooser: the name centred on the card, the count sitting
+                 * above it, small, on the name's own left edge.
                  *
-                 * The title is what is centred; the count hangs from its left
-                 * edge and takes no width of its own (w-0, no wrap), so it
-                 * starts exactly where the title's first letter does and runs
-                 * on past it if it is longer. Centring the pair instead let the
-                 * count set the width whenever it was the longer of the two —
-                 * "UX·UI" ended up at 25–45% of the card, well left of centre.
+                 * The title is what is centred. The count takes no width of
+                 * its own (w-0, no wrap), so it cannot pull the title off
+                 * centre when it is the longer of the two — which is what
+                 * happened when the pair was centred as one block, and "UX·UI"
+                 * ended up at 25–45% of the card. It starts exactly where the
+                 * title's first letter does and runs on past it if it must.
                  *
-                 * Sizes are up everywhere: 28px on a phone, 57.8 at 1014 and
-                 * 70.4 at 1440. On a phone that only fits because the card
-                 * gives up side padding in this layout (see LiquidTank):
-                 * "Realtime Experience" already filled 91% of the line and
-                 * broke onto two at +15% with the old padding.
+                 * Title sizes: 28px on a phone, 57.8 at 1014, 70.4 at 1440. On
+                 * a phone that only fits because the card gives up side
+                 * padding in this layout (see LiquidTank).
                  *
                  * The middle of the card is the back wall of a lit gallery, so
                  * the tank dims softly behind the type. No "Enter": the card
@@ -273,18 +271,18 @@ export default function RulerCarousel({
                  * under Tailwind v4 unlayered rules beat every utility.
                  */
                 <span className="inline-flex flex-col items-start text-left">
-                  <span
-                    className="display block text-[clamp(1.75rem,5.7vw,4.4rem)] leading-[0.9] text-white"
-                    style={CHOOSER_TITLE}
-                  >
-                    {it.title}
-                  </span>
-                  <span className="mt-3 w-0 whitespace-nowrap font-mono text-[13px] font-medium uppercase tracking-[0.22em] text-white tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] md:mt-4 md:text-[16px]">
+                  <span className="mb-2 w-0 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-white tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] md:mb-3 md:text-[12px]">
                     {String(i + 1).padStart(2, "0")}
                     <span className="mx-2" aria-hidden>
                       —
                     </span>
                     {it.eyebrow}
+                  </span>
+                  <span
+                    className="display block text-[clamp(1.75rem,5.7vw,4.4rem)] leading-[0.9] text-white"
+                    style={CHOOSER_TITLE}
+                  >
+                    {it.title}
                   </span>
                 </span>
               ) : (
