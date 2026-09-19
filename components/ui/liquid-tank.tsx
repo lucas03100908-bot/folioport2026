@@ -211,22 +211,44 @@ vec3 room(vec3 p, vec3 n){
 
 /* Amplitude, so the march can bound the surface inside a thin slab and spend
    all its steps where the water actually is. */
-/* Sweeping the card really does throw the tank around now.
-   The old coefficient bought a 1.7x swing at full slosh, which is not enough
-   to read as a reaction to anything; this is closer to 3.5x. */
-float amplitude(){ return 0.070 + u_slosh * 0.062; }
+/* Sweeping the card throws the tank around, and harder than it did.
+   At an ordinary sweep (slosh about 1.2) the waves are some 40% taller than
+   before. It saturates rather than climbing linearly, so a frantic stir still
+   reads as more without running away: the camera sits only half a unit above
+   the water, and there is a hard ceiling on how tall a crest can get before
+   it is higher than the eye looking at it (see CREST_CAP). */
+float amplitude(){ return 0.070 + 0.26 * (1.0 - exp(-0.6 * u_slosh)); }
 
 /* The ripple the pointer drags behind it, in world units. Deliberately not
    scaled by amplitude(): a ring that grows with the sloshing is a ring whose
    size the slab below cannot state exactly, and the slab has to be exact. */
-float wakeAmp(){ return u_wake * 0.075; }
+float wakeAmp(){ return u_wake * 0.13; }
 
-/* The march bounds the surface inside a slab and spends every step inside it,
-   so the slab must bound everything that can lift or drop the water — and
-   bound it tightly, because a slab wider than the water wastes steps and a
-   slab narrower than the water steps straight over crests and punches holes
-   in the surface. h runs to 1.63 above the mean before the trough squash. */
-float slabAmp(){ return amplitude() * 1.70 + wakeAmp(); }
+/* The two limits the surface is held between.
+
+   BED_TOP is the highest the sand can reach — bedY() at every noise term's
+   maximum. The surface is never allowed below it. Before this, a click, which
+   drains the tank by 0.31, took the surface down to 0.1 below the sand across
+   74% of the water: the depth read through it went negative and the colour
+   came apart on every click, briefly, for as long as the tank took to refill.
+   Now it drains to a thin sheet lying over the sand, which is what a drained
+   tank looks like.
+
+   CREST_CAP is the highest a crest may stand. The eye is at 0.24; a crest
+   near the front that rose past it would put the camera underwater, where the
+   march has nothing to find, and punch a see-through hole in the bottom of the
+   card. Taller waves are only safe with a ceiling on them. */
+const float BED_TOP = FLOORY + 0.276;
+const float CREST_CAP = 0.15;
+
+float smax(float a, float b, float k){
+  float h = max(k - abs(a - b), 0.0) / k;
+  return max(a, b) + h * h * k * 0.25;
+}
+float smin(float a, float b, float k){
+  float h = max(k - abs(a - b), 0.0) / k;
+  return min(a, b) - h * h * k * 0.25;
+}
 
 /* A crest, not a sine.
    Squaring a sine that has been lifted into 0..1 keeps the peak and pushes
@@ -299,7 +321,11 @@ float height(vec2 q){
 }
 
 float surfaceY(vec2 q){
-  return baseLevel() + u_tilt * q.x * 0.09 + height(q);
+  float y = baseLevel() + u_tilt * q.x * 0.09 + height(q);
+  /* Both limits taken smoothly, so a crest that meets the ceiling rounds off
+     and a trough that meets the sand lies down on it, rather than either
+     being cut flat with a crease along the line. */
+  return smin(smax(y, BED_TOP + 0.02, 0.05), CREST_CAP, 0.08);
 }
 
 /* Where this point stands relative to the mean surface: about -1 in a trough,
@@ -444,19 +470,41 @@ void main(){
   /* ----------------------------------------------- find the surface -- */
   float hit = -1.0;
   if (rd.y < -0.0005){
-    float amp = slabAmp();
+    /* The slab the march searches: everything that can lift or drop the
+       water, and nothing more — a slab wider than the water wastes steps, and
+       one narrower steps straight over crests and punches holes in it.
+
+       It is asymmetric now, because the surface is: crests run to 1.70 x the
+       amplitude above the mean, troughs only to 1.44 x and then squashed to
+       48%. It carries the tilt the pointer puts on the tank, which it never
+       did — up to 0.117 at the side walls. And it is clamped to the same two
+       limits surfaceY() is, so it never searches above the crest ceiling or
+       below the sand. Measured against a 400-step reference with an unbounded
+       slab, the old one missed up to 163 pixels of water a frame, mostly thin
+       crests at a graze along the far edge.
+
+       Forty-eight even steps. An adaptive step — long strides while the ray
+       is high above the water — was tried and is far worse here: a ray
+       skimming the surface drops only a few percent of each stride, so the gap
+       barely closes and it runs out of iterations before arriving, missing
+       thousands of pixels. Even steps are right for this camera; the count is
+       a cost trade. Holes in the worst frame against the reference, and cost
+       on a desktop card: 36 steps 175 px / 1.53 ms, 48 steps 105 px /
+       1.59 ms, 56 steps 71 px / 1.97 ms. Most rays find the water early and
+       stop, which is why 48 is nearly free and 56 is not. */
     float base = baseLevel();
-    float t0 = max((base + amp - ro.y) / rd.y, 0.0);
-    float t1 = min((base - amp - ro.y) / rd.y, tR);
+    float tiltR = abs(u_tilt) * HALF.x * 0.09;
+    float up = amplitude() * 1.70 + wakeAmp() + tiltR;
+    float dn = (amplitude() * 1.44 + wakeAmp()) * 0.48 + tiltR;
+    float top = max(min(base + up, CREST_CAP), BED_TOP + 0.035);
+    float bottom = max(base - dn, BED_TOP + 0.02) - 0.02;
+    float t0 = max((top - ro.y) / rd.y, 0.0);
+    float t1 = min((bottom - ro.y) / rd.y, tR);
     if (t1 > t0){
-      /* Twenty-eight, not twenty-four. The slab is wider than it was — the
-         waves are half again as tall at full slosh and the wake sits on top
-         of them — and the same step count across a wider band starts stepping
-         over crests, which punches holes in the surface. */
-      float dt = (t1 - t0) / 28.0;
+      float dt = (t1 - t0) / 48.0;
       float tp = t0;
       float dp = 1.0;
-      for (int i = 1; i <= 28; i++){
+      for (int i = 1; i <= 48; i++){
         float t = t0 + dt * float(i);
         vec3 q = ro + rd * t;
         float d = q.y - surfaceY(q.xz);

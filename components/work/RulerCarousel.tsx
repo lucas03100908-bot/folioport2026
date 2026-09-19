@@ -251,39 +251,25 @@ export default function RulerCarousel({
             >
               {liquid ? (
                 /*
-                 * The chooser: the name centred on the card, the count sitting
-                 * above it, small, on the name's own left edge.
+                 * The chooser: the name alone, centred on the card.
                  *
-                 * The title is what is centred. The count takes no width of
-                 * its own (w-0, no wrap), so it cannot pull the title off
-                 * centre when it is the longer of the two — which is what
-                 * happened when the pair was centred as one block, and "UX·UI"
-                 * ended up at 25–45% of the card. It starts exactly where the
-                 * title's first letter does and runs on past it if it must.
+                 * The count line is gone from the face of the card — the rail
+                 * counter under it already says which of three this is, and
+                 * the button still announces its count to a screen reader
+                 * ("Motion·3D, 08 Projects"). The name is the only thing left
+                 * to read, so it is the only thing there.
                  *
-                 * Title sizes: 28px on a phone, 57.8 at 1014, 70.4 at 1440. On
-                 * a phone that only fits because the card gives up side
-                 * padding in this layout (see LiquidTank).
+                 * 25.6px on a phone, 50.7 at 1014, 62.4 at 1440.
                  *
                  * The middle of the card is the back wall of a lit gallery, so
-                 * the tank dims softly behind the type. No "Enter": the card
-                 * is the button. No `.eyebrow` class: it is unlayered CSS, and
-                 * under Tailwind v4 unlayered rules beat every utility.
+                 * the tank dims softly behind the type (see LiquidTank). No
+                 * "Enter": the card is the button.
                  */
-                <span className="inline-flex flex-col items-start text-left">
-                  <span className="mb-2 w-0 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-white tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] md:mb-3 md:text-[12px]">
-                    {String(i + 1).padStart(2, "0")}
-                    <span className="mx-2" aria-hidden>
-                      —
-                    </span>
-                    {it.eyebrow}
-                  </span>
-                  <span
-                    className="display block text-[clamp(1.75rem,5.7vw,4.4rem)] leading-[0.9] text-white"
-                    style={CHOOSER_TITLE}
-                  >
-                    {it.title}
-                  </span>
+                <span
+                  className="display block text-[clamp(1.6rem,5vw,3.9rem)] leading-[0.9] text-white"
+                  style={CHOOSER_TITLE}
+                >
+                  {it.title}
                 </span>
               ) : (
                 <>
