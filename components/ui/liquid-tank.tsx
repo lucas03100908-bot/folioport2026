@@ -1109,6 +1109,10 @@ export default function LiquidTank({
             src={still}
             alt=""
             aria-hidden
+            /* a discipline opens six to eight cards at once, most of them
+               off the rail's ends — they load as they come near */
+            loading="lazy"
+            decoding="async"
             /* A missing still would otherwise leave the card's flat charcoal
                with a broken-image glyph on it. Hide the element and the card
                falls back to its own ground, which is a plausible card. */

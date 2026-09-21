@@ -1,5 +1,7 @@
 "use client";
 
+import Reveal from "@/components/ui/reveal";
+
 /**
  * Stage 4.
  *
@@ -18,7 +20,7 @@ export default function ConnectStage() {
     >
       <div className="sticky top-0 flex h-svh w-full items-end justify-center px-gutter pb-safe-[5rem]">
         <div className="relative flex flex-col items-center gap-3 text-center">
-          <h2 className="eyebrow">Connect</h2>
+          <Reveal className="display text-display-3 text-ink">Connect</Reveal>
           <p className="px-6 text-small tracking-[0.06em] text-ink/80 md:text-muted">
             Follow it — every word is a link.
           </p>

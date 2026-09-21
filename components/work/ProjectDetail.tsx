@@ -201,11 +201,6 @@ export default function ProjectDetail() {
             />
             {/* TODO_ASSET: swap for a <video> loop when the real cut exists */}
           </div>
-          <p className="tagrow mt-4">
-            {active.tags.map((t) => (
-              <span key={t}>{t}</span>
-            ))}
-          </p>
         </div>
 
         {/* script */}
@@ -226,6 +221,14 @@ export default function ProjectDetail() {
               above it, it was a kicker the title did not need */}
           <p data-detail-block className="eyebrow mt-4">
             {active.eyebrow}
+          </p>
+          {/* The tags travel with the title's credit. Under the image they
+              sat at the far bottom-left on a wide screen, a column away from
+              the title they describe. */}
+          <p data-detail-block className="tagrow mt-3">
+            {active.tags.map((t) => (
+              <span key={t}>{t}</span>
+            ))}
           </p>
 
           <div data-detail-block className="hair my-6 lg:my-8" />

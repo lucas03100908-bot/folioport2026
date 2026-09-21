@@ -49,7 +49,7 @@ export default function Footer() {
     /* z-20 puts it above the connect layers (z-11/12). They are `fixed` and
        full-viewport, so at z-10 the blurred link field was painting straight
        over the spec sheet and washing it out. */
-    <footer className="relative z-20 w-full bg-black px-gutter pt-16 pb-safe-[4rem]">
+    <footer className="relative z-20 flex min-h-svh w-full flex-col bg-black px-gutter pt-[calc(var(--nav-h)+2rem)] pb-safe-[2rem] md:pt-[calc(var(--nav-h)+3.5rem)] md:pb-safe-[3rem]">
       {/* the added layer: the link field dissolves into solid black on the way
           in, so the footer arrives rather than collides */}
       <div
@@ -59,10 +59,10 @@ export default function Footer() {
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/12" />
       {/* The last stage gets a title like every other one; the card under it
           is its spec sheet, credited as such. */}
-      <div className="mx-auto mb-10 max-w-page md:mb-14">
+      <div className="mx-auto mb-8 w-full max-w-page md:mb-14">
         <Reveal className="display text-display-2">Contact</Reveal>
       </div>
-      <div className="mx-auto grid max-w-page gap-12 md:grid-cols-[1fr_auto]">
+      <div className="mx-auto mb-10 grid w-full max-w-page gap-10 md:mb-16 md:grid-cols-[1fr_auto] md:gap-12">
         <div className="glass glass-rim max-w-[620px] rounded-frame p-7 md:p-9">
           <p className="eyebrow">Spec Sheet</p>
           <dl className="mt-7 flex flex-col gap-3.5">
@@ -113,7 +113,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto mt-16 flex max-w-page items-center justify-between border-t border-white/10 pt-6">
+      <div className="mx-auto mt-auto flex w-full max-w-page items-center justify-between border-t border-white/10 pt-6">
         <span className="text-label text-faint">
           © {new Date().getFullYear()} KIM MINHO
         </span>

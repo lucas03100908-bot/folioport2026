@@ -142,8 +142,23 @@ export const CONTACT: [string, string][] = [
 /* -------------------------------------------------------------- assets --- */
 /** The full-bleed film behind the hero. */
 export const HERO_BG_SRC = "/video/hero-bg.mp4";
+/**
+ * The same film for phones: 1280 wide, a keyframe every two seconds, 1.6MB
+ * against 6.3. The desktop cut is all-intra because desktop *scrubs* it (see
+ * tools/README.md); a phone only ever loops it forward, so it pays for none of
+ * that. Must match the engine's `view.mobile` line (< 900px), which is where
+ * scrubbing stops.
+ */
+export const HERO_BG_MOBILE_SRC = "/video/hero-bg-mobile.mp4";
 
 export const SHOWREEL_SRC = "/video/showreel.mp4";
+/**
+ * The reel again at 320x180 for the glow behind the frame. That copy is
+ * blurred by 70px, so every pixel past this is decoded only to be thrown
+ * away — and it used to be a second full 720p decode running alongside the
+ * real one. 612KB.
+ */
+export const SHOWREEL_GLOW_SRC = "/video/showreel-glow.mp4";
 
 /** The reel runs fast on purpose. */
 export const SHOWREEL_PLAYBACK_RATE = 1.8;

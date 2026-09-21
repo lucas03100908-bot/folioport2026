@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { HERO_BG_SRC } from "@/lib/content";
+import { HERO_BG_MOBILE_SRC, HERO_BG_SRC } from "@/lib/content";
 import { view } from "@/lib/state";
 
 /**
@@ -93,8 +93,11 @@ export default function HeroBackground() {
      * happened and the event will never fire again. The MediaError sticks
      * around; the event does not. */
     const onFail = () => announce();
-    if (el.error) announce();
-    else el.addEventListener("error", onFail, { once: true });
+    /* With <source> children a failure fires on the source, not the video,
+       and does not bubble — so listen in the capture phase. Every source
+       gone is NETWORK_NO_SOURCE. */
+    if (el.error || el.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) announce();
+    else el.addEventListener("error", onFail, { once: true, capture: true });
 
     if (el.readyState >= 1) announce();
     else el.addEventListener("loadedmetadata", announce, { once: true });
@@ -103,7 +106,7 @@ export default function HeroBackground() {
     else el.addEventListener("loadeddata", onData, { once: true });
 
     return () => {
-      el.removeEventListener("error", onFail);
+      el.removeEventListener("error", onFail, { capture: true });
       el.removeEventListener("loadedmetadata", announce);
       el.removeEventListener("loadeddata", onData);
     };
@@ -131,7 +134,6 @@ export default function HeroBackground() {
         ref={v}
         data-engine="hero-bg-video"
         aria-hidden
-        src={HERO_BG_SRC}
         muted
         playsInline
         autoPlay
@@ -151,7 +153,10 @@ export default function HeroBackground() {
          * black. Landscape and desktop keep `cover`.
          */
         className="absolute inset-0 h-full w-full object-contain md:object-cover"
-      />
+      >
+        <source src={HERO_BG_MOBILE_SRC} type="video/mp4" media="(max-width: 899px)" />
+        <source src={HERO_BG_SRC} type="video/mp4" />
+      </video>
 
       {/* holds the nav and the copy row legible; the title blends *through* it */}
       <div

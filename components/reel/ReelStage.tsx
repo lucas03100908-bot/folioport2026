@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SHOWREEL_PLAYBACK_RATE, SHOWREEL_SRC } from "@/lib/content";
+import { SHOWREEL_PLAYBACK_RATE, SHOWREEL_GLOW_SRC, SHOWREEL_SRC } from "@/lib/content";
 import { view } from "@/lib/state";
 
 /**
@@ -145,7 +145,7 @@ export default function ReelStage() {
     <section
       data-stage="reel"
       className="relative h-[300vh] w-full"
-      aria-label="Showreel 2026"
+      aria-label="Showreel 2024"
     >
       <div className="sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden">
         {/* blurred copy behind the frame — depth, not decoration */}
@@ -158,7 +158,7 @@ export default function ReelStage() {
           <video
             ref={glow}
             className="h-full w-full object-cover"
-            src={SHOWREEL_SRC}
+            src={SHOWREEL_GLOW_SRC}
             muted
             loop
             playsInline
@@ -206,7 +206,7 @@ export default function ReelStage() {
               letterSpacing: "-0.035em",
             }}
           >
-            Showreel 2026
+            Showreel 2024
           </h2>
         </div>
 
