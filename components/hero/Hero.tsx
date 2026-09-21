@@ -30,7 +30,7 @@ export default function Hero() {
             positioned element with a z-index creates a stacking context, which
             isolates the blend group and would leave the type plain white.
             DOM order alone puts it above the film. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-24 md:px-12 md:pb-28">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-gutter pb-safe-[6rem] md:pb-safe-[7rem]">
           <div className="mx-auto w-full max-w-page">
             <div className="w-[min(880px,62vw)] min-w-[260px] max-sm:w-[88vw]">
               <HeroTitle />
@@ -42,7 +42,7 @@ export default function Hero() {
         <div
           data-engine="panel"
           data-stage="hero"
-          className="engine-driven absolute inset-x-0 bottom-0 z-20 px-5 pb-10 md:px-12 md:pb-12"
+          className="engine-driven absolute inset-x-0 bottom-0 z-20 px-gutter pb-safe-[2.5rem] md:pb-safe-[3rem]"
         >
           <div className="mx-auto flex w-full max-w-page items-end justify-between gap-10">
             <div>
@@ -56,7 +56,7 @@ export default function Hero() {
 
             <button
               onClick={() => scrollToStage("work", !view.reduced)}
-              className="group hidden items-center gap-4 pb-1 md:flex"
+              className="hit group hidden items-center gap-4 pb-1 md:flex"
             >
               <span className="eyebrow eyebrow-dim transition-colors group-hover:text-accent">
                 Scroll

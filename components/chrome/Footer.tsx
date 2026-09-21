@@ -48,7 +48,7 @@ export default function Footer() {
     /* z-20 puts it above the connect layers (z-11/12). They are `fixed` and
        full-viewport, so at z-10 the blurred link field was painting straight
        over the spec sheet and washing it out. */
-    <footer className="relative z-20 w-full bg-black px-5 py-16 md:px-12">
+    <footer className="relative z-20 w-full bg-black px-gutter pt-16 pb-safe-[4rem]">
       {/* the added layer: the link field dissolves into solid black on the way
           in, so the footer arrives rather than collides */}
       <div
@@ -58,7 +58,7 @@ export default function Footer() {
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/12" />
       <div className="mx-auto grid max-w-page gap-12 md:grid-cols-[1fr_auto]">
         <div className="glass glass-rim max-w-[620px] rounded-frame p-7 md:p-9">
-          <p className="eyebrow">Contact — Spec Sheet</p>
+          <h2 className="eyebrow">Contact — Spec Sheet</h2>
           <dl className="mt-7 flex flex-col gap-3.5">
             {CONTACT.map(([k, v]) => (
               <div key={k} className="dotted text-muted">
@@ -69,7 +69,7 @@ export default function Footer() {
                       type="button"
                       onClick={copy}
                       aria-label={`Copy email address ${EMAIL}`}
-                      className="group inline-flex items-center gap-2.5 transition-colors hover:text-accent"
+                      className="group -my-3 inline-flex min-h-11 items-center gap-2.5 transition-colors hover:text-accent"
                     >
                       <span ref={address}>{EMAIL}</span>
                       <span
@@ -99,7 +99,7 @@ export default function Footer() {
               href={s.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="display text-display-3 text-ink/80 transition-colors hover:text-accent"
+              className="display hit flex items-center text-display-3 text-ink/80 transition-colors hover:text-accent"
             >
               {s.label}
             </a>

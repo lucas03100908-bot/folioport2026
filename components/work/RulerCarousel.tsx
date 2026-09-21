@@ -199,7 +199,7 @@ export default function RulerCarousel({
         ref={trackRef}
         className={
           tall
-            ? "rail-track relative grid h-[64vh] min-h-[440px] touch-pan-y place-items-center"
+            ? "rail-track relative grid h-[64vh] min-h-[400px] touch-pan-y place-items-center"
             : "rail-track relative grid h-[54vh] min-h-[360px] touch-pan-y place-items-center"
         }
       >
@@ -323,7 +323,7 @@ export default function RulerCarousel({
 
       <Rule flipped />
 
-      <div className="rail-controls relative mt-9 flex items-center justify-center gap-8">
+      <div className="rail-controls relative mt-7 flex items-center justify-center gap-4">
         <Step
           dir={-1}
           label="Previous"
@@ -362,7 +362,7 @@ function Step({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="text-muted transition-colors hover:text-accent focus-visible:text-accent"
+      className="hit grid place-items-center text-muted transition-[color,scale] hover:text-accent focus-visible:text-accent active:scale-[0.94]"
     >
       <svg
         width="28"

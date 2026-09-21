@@ -154,7 +154,7 @@ export default function ProjectDetail() {
       {/* Two ways out, at the two places people look for one. */}
       <button
         onClick={close}
-        className="glass fixed left-5 top-5 z-10 flex items-center gap-2.5 rounded-full px-4 py-3 text-label uppercase text-muted transition-[color,scale] active:scale-[0.97] hover:text-accent md:left-8 md:top-8"
+        className="glass hit fixed left-5 top-5 z-10 flex items-center gap-2.5 rounded-full px-4 py-3 text-label uppercase text-muted transition-[color,scale] active:scale-[0.97] hover:text-accent md:left-8 md:top-8"
       >
         <svg width="16" height="9" viewBox="0 0 16 9" aria-hidden>
           <path
@@ -181,7 +181,7 @@ export default function ProjectDetail() {
           A 1440x700 laptop is a wide screen and a short one, and fixed vertical
           rhythm on a short screen pushed the call to action off the bottom. */}
       <div
-        className="mx-auto grid min-h-full max-w-page grid-cols-1 items-center gap-8 px-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-12"
+        className="mx-auto grid min-h-full max-w-page grid-cols-1 items-center gap-8 px-gutter lg:grid-cols-[1.05fr_0.95fr] lg:gap-16"
         style={{
           paddingTop: "clamp(5rem, 12vh, 7rem)",
           paddingBottom: "clamp(3rem, 8vh, 6rem)",

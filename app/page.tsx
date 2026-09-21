@@ -46,7 +46,7 @@ export default function Page() {
             .querySelector<HTMLElement>('[data-stage="work"]')
             ?.focus({ preventScroll: true });
         }}
-        className="sr-only rounded-full bg-accent px-5 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-black focus:not-sr-only focus:fixed focus:left-5 focus:top-5 focus:z-[300]"
+        className="sr-only hit rounded-full bg-accent px-5 py-3 text-label uppercase text-black focus:not-sr-only focus:fixed focus:left-5 focus:top-5 focus:z-[300]"
       >
         Skip to work
       </button>

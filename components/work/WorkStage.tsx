@@ -83,7 +83,7 @@ export default function WorkStage() {
       style={{ "--well": `${items.length * VH_PER_ITEM}vh` } as CSSProperties}
     >
       <div className="sticky top-0 flex h-svh w-full flex-col overflow-hidden">
-        <header className="work-head shrink-0 px-5 pt-[calc(var(--nav-h)+4vh)] md:px-12">
+        <header className="work-head shrink-0 px-gutter pt-[calc(var(--nav-h)+4vh)]">
           <div className="mx-auto w-full max-w-page">
             {isOpen ? (
               <>
@@ -134,7 +134,7 @@ export default function WorkStage() {
           />
         </div>
 
-        <p className="work-cue pointer-events-none shrink-0 pb-7 text-center text-label text-muted md:text-faint">
+        <p className="work-cue pointer-events-none shrink-0 pb-safe-[1.75rem] text-center text-label text-muted md:text-faint">
           {/* the gesture differs by pointer, so the cue has to as well */}
           <span className="max-[899px]:hidden">SCROLL TO BROWSE</span>
           <span className="min-[900px]:hidden">SWIPE TO BROWSE</span>

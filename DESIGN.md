@@ -171,13 +171,16 @@ Each role is a Tailwind utility (`text-display-2`, `text-label`, …) that sets 
 The page is a sequence of sticky stages: hero film, work rail, showreel, connect field. Each stage is one screen tall, pinned while the scroll plays it. Content never scrolls past a stage. The stage plays and then yields.
 
 - **Container:** `max-w-page` (1440px), centred, for every stage and the nav.
-- **Gutters:** 20px on phones, 48px from `md` (768px) up. The same pair everywhere.
+- **Gutters:** `px-gutter` everywhere, never a bare `px-5 md:px-12`. It's 20px on phones and 48px from `md` (768px) up, and it never goes below the safe-area inset (the site uses `viewport-fit: cover`, so a sideways iPhone's notch sits inside the page).
+- **Bottom edges:** anything anchored to the bottom of the screen uses `pb-safe-[…]` / `bottom-safe-[…]`, which add the home-indicator inset to the spacing.
 - **Spacing:** Tailwind's 4px scale. Tight inside a group (8–14px between a title and its credit), generous between groups (24–40px), and more space above a heading than below it.
 - **Breakpoints:** 900px is the one that changes behaviour: the pointer versus the phone, scroll versus swipe, and `view.mobile` in the engine. `md` and `lg` only adjust size.
 - **Short screens** (max-height 560px, a phone turned sideways) are measured in height instead of width. See the `max-height` block in globals.css.
 - **Stable headers:** a header row holds its height across states, so the rail under it never jumps when a discipline opens or closes.
 
 ### Named Rules
+**The 44 Rule.** Every control is at least 44×44px to the finger (`hit`), however small it is drawn: arrows, the wordmark, text links and the email copy button included. Pointer-only controls hidden from touch (the side progress rail) may drop to 24px, the WCAG 2.5.8 floor.
+
 **The One-Screen Stage Rule.** Every stage must fit its screen at 375×667, 812×375 and 1440×700 with nothing essential below the fold. Check with real copy.
 
 ## Elevation & Depth
@@ -202,7 +205,8 @@ Two shapes only. **Frames** (the liquid tanks, the reel window, detail media, th
 - **Primary (dialog):** Ember fill, black Label text, pill, 16px × 24px.
 - **Outline CTA (MagneticButton):** 1px white/25 border, square, Label text. On hover the border turns ember, the button fills with Ember Glow and a radial ember light follows the pointer. The magnetic pull runs 420ms on the expo curve.
 - **Glass control (Back, Close):** glass pill with House Light text; Ember on hover.
-- **Press:** every button that is not magnetic scales to 0.97 on `:active`, so a tap is acknowledged.
+- **Press:** every button that is not magnetic scales to 0.97 on `:active` (a bare icon button scales to 0.94), so a tap is acknowledged.
+- **Icon buttons (rail Previous/Next):** the glyph is drawn at 28×18px inside a 44×44px hit area, House Light, Ember on hover and focus.
 
 ### Category tabs (nav)
 Label type in House Light, 45px tall for touch. The active tab is Ember with a 1px ember underline that draws from the left (420ms, expo). On hover, the underline grows a third of the way as a hint.
@@ -239,6 +243,8 @@ Two speeds, three curves: UI answers fast and scenes breathe.
 - **Do** give every non-magnetic button `active:scale-[0.97]`.
 - **Do** measure type over footage with the scrim applied and the footage at its brightest.
 - **Do** keep a header row's height when its content changes between states.
+- **Do** give every section a real heading (visible or `sr-only`), so a screen reader can jump between stages.
+- **Do** mark decorative video `aria-hidden`.
 
 ### Don't:
 - **Don't** put a small caps label above a heading. Credits go beside or below.
@@ -247,4 +253,6 @@ Two speeds, three curves: UI answers fast and scenes breathe.
 - **Don't** use `duration-300` or `ease-in` for UI. Use the default 200ms ease-out, or name a token.
 - **Don't** add a second accent colour or tint surfaces with the ember.
 - **Don't** add glass or blur over a still black ground.
+- **Don't** hard-code a page gutter or a bottom inset. Use `px-gutter` / `pb-safe-[…]`.
+- **Don't** ship a control under 44px on touch.
 - **Don't** mix radii. A frame is 16px, a floating control is a pill, and set type is square.

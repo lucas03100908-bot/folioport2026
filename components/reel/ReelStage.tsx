@@ -193,7 +193,7 @@ export default function ReelStage() {
         {/* SHOWREEL 2026 — a heavy stamp that dissolves as the film opens.
             No z-index anywhere on this chain, or the blend group would be
             isolated and the type would stop inverting. */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-5 md:px-10">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-gutter">
           <h2
             data-engine="reel-title"
             className="whitespace-nowrap text-center text-[clamp(2.2rem,7.5vw,6rem)] uppercase leading-none text-white"
@@ -211,7 +211,7 @@ export default function ReelStage() {
         </div>
 
         {/* one cue at a time, so it always says what to do next */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-10 z-10 flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 bottom-safe-[2.5rem] z-10 flex justify-center">
           <span
             data-engine="reel-cue-a"
             className="engine-driven absolute whitespace-nowrap text-label text-ink md:text-muted"

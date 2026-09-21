@@ -72,6 +72,45 @@
   --dur-scene: 900ms;
 }
 
+/* ------------------------------------------------------------ layout --- */
+/*
+ * One page gutter, and it respects the notch. The site sets
+ * `viewport-fit: cover`, which hands the whole screen to the page — so on a
+ * phone turned sideways the sensor housing and the home indicator sit on top
+ * of whatever is within ~47px of the edge. Every edge-anchored block takes its
+ * inset from these instead of a bare px-5 / pb-10.
+ */
+:root {
+  --gutter: 20px;
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 768px) {
+  :root {
+    --gutter: 48px;
+  }
+}
+@utility px-gutter {
+  padding-left: max(var(--gutter), var(--safe-l));
+  padding-right: max(var(--gutter), var(--safe-r));
+}
+/* bottom padding that clears the home indicator: pb-safe-[2.5rem] etc. */
+@utility pb-safe-* {
+  padding-bottom: calc(--value([length]) + var(--safe-b));
+}
+/* the same for an element positioned from the bottom edge */
+@utility bottom-safe-* {
+  bottom: calc(--value([length]) + var(--safe-b));
+}
+
+/* Every control is at least 44x44 to the finger, however small it is drawn.
+   Apple HIG and WCAG 2.5.5 both land on 44. */
+@utility hit {
+  min-height: 44px;
+  min-width: 44px;
+}
+
 /* --------------------------------------------------------------- base --- */
 :root {
   /* mirrored from lib/theme.ts — Canvas clear colour uses the same value,
@@ -606,7 +645,7 @@ html.lenis body {
   }
 
   .work-cue {
-    padding-bottom: 0.7rem;
+    padding-bottom: calc(0.7rem + var(--safe-b));
   }
 }
 

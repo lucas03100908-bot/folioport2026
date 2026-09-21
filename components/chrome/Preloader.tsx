@@ -207,7 +207,7 @@ export default function Preloader() {
         is waking
       </p>
 
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-5 pb-10 md:px-12">
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-gutter pb-safe-[2.5rem]">
         <span className="eyebrow">Minho — Portfolio</span>
         <span className="font-mono text-meta text-muted tabular-nums">
           {String(Math.round(pct)).padStart(3, "0")}

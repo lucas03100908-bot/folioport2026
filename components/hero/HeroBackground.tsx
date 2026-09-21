@@ -130,6 +130,7 @@ export default function HeroBackground() {
       <video
         ref={v}
         data-engine="hero-bg-video"
+        aria-hidden
         src={HERO_BG_SRC}
         muted
         playsInline

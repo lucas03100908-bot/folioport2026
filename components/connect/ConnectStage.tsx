@@ -16,9 +16,9 @@ export default function ConnectStage() {
       data-stage="connect"
       className="pointer-events-none relative h-[200vh] w-full"
     >
-      <div className="sticky top-0 flex h-svh w-full items-end justify-center px-5 pb-20 md:px-12">
+      <div className="sticky top-0 flex h-svh w-full items-end justify-center px-gutter pb-safe-[5rem]">
         <div className="relative flex flex-col items-center gap-3 text-center">
-          <p className="eyebrow">Connect</p>
+          <h2 className="eyebrow">Connect</h2>
           <p className="px-6 text-small tracking-[0.06em] text-ink/80 md:text-muted">
             Follow it — every word is a link.
           </p>
