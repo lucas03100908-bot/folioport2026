@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { CONTACT, EMAIL, SOCIALS } from "@/lib/content";
+import Reveal from "@/components/ui/reveal";
 
 export default function Footer() {
   const [state, setState] = useState<"idle" | "copied" | "selected">("idle");
@@ -56,9 +57,14 @@ export default function Footer() {
         className="pointer-events-none absolute inset-x-0 -top-32 h-32 bg-gradient-to-b from-transparent via-black/70 to-black"
       />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/12" />
+      {/* The last stage gets a title like every other one; the card under it
+          is its spec sheet, credited as such. */}
+      <div className="mx-auto mb-10 max-w-page md:mb-14">
+        <Reveal className="display text-display-2">Contact</Reveal>
+      </div>
       <div className="mx-auto grid max-w-page gap-12 md:grid-cols-[1fr_auto]">
         <div className="glass glass-rim max-w-[620px] rounded-frame p-7 md:p-9">
-          <h2 className="eyebrow">Contact — Spec Sheet</h2>
+          <p className="eyebrow">Spec Sheet</p>
           <dl className="mt-7 flex flex-col gap-3.5">
             {CONTACT.map(([k, v]) => (
               <div key={k} className="dotted text-muted">

@@ -250,6 +250,29 @@ html.lenis body {
   }
 }
 
+/* ------------------------------------------------------------- reveal --- */
+/* The title-card lift <Reveal/> drives. The line is clipped by its own box,
+   so the words rise from behind an edge instead of fading in from nowhere. */
+@layer components {
+.reveal {
+  overflow: hidden;
+  /* room for Didone descenders and the rise itself */
+  padding-block: 0.08em;
+  margin-block: -0.08em;
+}
+.reveal-line {
+  display: inline-block;
+  transition:
+    transform var(--dur-scene) var(--ease-out-expo),
+    opacity var(--dur-scene) var(--ease-out-expo);
+}
+.reveal[data-armed]:not([data-in]) .reveal-line {
+  transform: translateY(105%);
+  opacity: 0;
+  transition: none;
+}
+}
+
 /* spec-sheet dotted key/value row */
 .dotted {
   display: flex;
@@ -265,6 +288,18 @@ html.lenis body {
   height: 0;
   border-bottom: 1px dotted rgba(255, 255, 255, 0.22);
   transform: translateY(-0.25em);
+}
+/* On a phone the leader has no room to run: long values wrapped under it and
+   read as a broken table. There the key sits above its value instead. */
+@media (max-width: 767px) {
+  .dotted {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+  .dotted::after {
+    display: none;
+  }
 }
 .dotted > :first-child {
   order: 0;
@@ -381,7 +416,18 @@ html.lenis body {
   box-shadow:
     0 26px 60px -24px rgba(0, 0, 0, 0.85),
     inset 0 0 0 1px rgba(255, 255, 255, 0.07);
-  transition: box-shadow var(--dur-ui) var(--ease-out);
+  transition:
+    box-shadow var(--dur-state) var(--ease-out-expo),
+    transform var(--dur-state) var(--ease-out-expo);
+}
+@media (hover: hover) {
+  .liquid-tank:hover {
+    transform: translateY(-6px);
+  }
+}
+.liquid-tank:active {
+  transform: translateY(-2px) scale(0.985);
+  transition-duration: var(--dur-press);
 }
 .liquid-tank:hover {
   box-shadow:
@@ -392,21 +438,24 @@ html.lenis body {
 /* the card that rides the rule */
 .rail-tank {
   width: min(76vw, 990px);
-  height: clamp(320px, 48vh, 460px);
+  height: clamp(320px, 46vh, 440px);
 }
 
 /* the chooser holds three cards and nothing else, so they can stand taller */
 .rail-tank-tall {
-  height: clamp(400px, 58vh, 545px);
+  height: clamp(380px, 56vh, 520px);
 }
 
 @media (max-width: 900px) {
+  /* They used to be 320/380px in a track 460-540px tall, which left a
+     160px band of black above and below the card on a 390x844 phone. Now
+     they take the track, less room for the fan to move in. */
   .rail-tank {
     width: 88vw;
-    height: 320px;
+    height: clamp(300px, 44vh, 440px);
   }
   .rail-tank-tall {
-    height: 380px;
+    height: clamp(340px, 54vh, 500px);
   }
 }
 
@@ -586,6 +635,29 @@ html.lenis body {
   filter: blur(1.2px) saturate(0.95);
 }
 
+/* ------------------------------------------------ short viewports (0) --- */
+/*
+ * 667px phones and 700px laptops. At these heights the rail, its two rules,
+ * the 44px controls and the cue added up to exactly the stage, so the
+ * controls sat flush on the cue with no air between them. The rail gives up
+ * a few vh instead; the cards shrink with it so they never outgrow it.
+ */
+@media (max-height: 760px) {
+  .rail-track {
+    height: 54vh;
+    min-height: 0;
+  }
+  .rail-tank {
+    height: 44vh;
+  }
+  .rail-tank-tall {
+    height: 50vh;
+  }
+  .rail-controls {
+    margin-top: 0.75rem;
+  }
+}
+
 /* ------------------------------------------------- short viewports (I) --- */
 /*
  * A phone turned sideways.
@@ -606,18 +678,24 @@ html.lenis body {
      box — lands on top of the controls below. Sized so the header, the track,
      the controls and the cue all add up to less than the screen. */
   .rail-track {
-    height: 46vh !important;
+    height: 40vh !important;
     min-height: 0 !important;
   }
 
   .rail-tank,
   .rail-tank-tall {
     width: min(46vw, 520px);
-    height: clamp(120px, 44vh, 240px);
+    height: clamp(120px, 38vh, 240px);
   }
 
   .rail-controls {
     margin-top: 0.6rem;
+  }
+
+  /* the lower rule repeats the upper one; here its 24px are the air between
+     the controls and the cue */
+  .rail-rule-b {
+    display: none;
   }
 
   /* the card is 120–260px tall here; the title and the call to action are all

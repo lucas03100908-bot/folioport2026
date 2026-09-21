@@ -11,6 +11,7 @@ import {
 import { view } from "@/lib/state";
 import RulerCarousel, { type RailItem } from "./RulerCarousel";
 import { useWork } from "./WorkProvider";
+import Reveal from "@/components/ui/reveal";
 
 /** vh of page scroll spent on each item of the rail. */
 const VH_PER_ITEM = 58;
@@ -101,9 +102,9 @@ export default function WorkStage() {
                   </svg>
                   All work
                 </button>
-                <h2 className="display mt-3 text-display-4">
+                <Reveal k={label} className="display mt-3 text-display-3">
                   {label}
-                </h2>
+                </Reveal>
               </>
             ) : (
               <>
@@ -111,9 +112,9 @@ export default function WorkStage() {
                     heading sits on the same line in both states and the rail
                     below it does not jump when a discipline opens. */}
                 <div aria-hidden className="h-[13px]" />
-                <h2 className="display mt-3 text-display-4">
+                <Reveal k="all" className="display mt-3 text-display-3">
                   Choose a discipline
-                </h2>
+                </Reveal>
               </>
             )}
           </div>

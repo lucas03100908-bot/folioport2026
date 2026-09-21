@@ -149,8 +149,8 @@ A projection booth palette: black, three greys of house light, and one ember.
 ### Hierarchy
 - **Display 1** (400, clamp(2.5rem, 7vw, 6rem), 0.92): the one moment per stage. The connect field, the reel stamp.
 - **Display 2** (400, clamp(1.75rem, 5vw, 4rem), 0.92): a title that owns its screen. Project detail title, discipline chooser.
-- **Display 3** (400, clamp(1.5rem, 3.4vw, 2.75rem), 0.92): a title on a frame. Project card titles, footer social links, the dialog title.
-- **Display 4** (400, clamp(1.35rem, 2.4vw, 1.9rem), 0.92): a stage heading, e.g. "Choose a discipline".
+- **Display 3** (400, clamp(1.5rem, 3.4vw, 2.75rem), 0.92): a title on a frame, and a stage heading. Project card titles, "Choose a discipline", footer social links, the dialog title.
+- **Display 4** (400, clamp(1.35rem, 2.4vw, 1.9rem), 0.92): reserved for a short screen's stage heading.
 - **Body** (400, 15px, 1.8): reading prose, mostly Korean project write-ups. Max measure 52ch.
 - **Small** (400, 13px, 1.7): notes, card blurbs, dialog copy. Max 46ch.
 - **Caption** (mono, 13px, 0.2em): numerals that sit on a frame or under the rail, such as "01 / 06".
@@ -181,7 +181,7 @@ The page is a sequence of sticky stages: hero film, work rail, showreel, connect
 ### Named Rules
 **The 44 Rule.** Every control is at least 44×44px to the finger (`hit`), however small it is drawn: arrows, the wordmark, text links and the email copy button included. Pointer-only controls hidden from touch (the side progress rail) may drop to 24px, the WCAG 2.5.8 floor.
 
-**The One-Screen Stage Rule.** Every stage must fit its screen at 375×667, 812×375 and 1440×700 with nothing essential below the fold. Check with real copy.
+**The One-Screen Stage Rule.** Every stage must fit its screen at 375×667, 390×844, 812×375, 1440×700 and 1440×900 with nothing essential below the fold, and at least 8px of air between the rail controls and the cue. Heights under 760px get the short-screen rail sizes in globals.css.
 
 ## Elevation & Depth
 
@@ -206,7 +206,7 @@ Two shapes only. **Frames** (the liquid tanks, the reel window, detail media, th
 - **Outline CTA (MagneticButton):** 1px white/25 border, square, Label text. On hover the border turns ember, the button fills with Ember Glow and a radial ember light follows the pointer. The magnetic pull runs 420ms on the expo curve.
 - **Glass control (Back, Close):** glass pill with House Light text; Ember on hover.
 - **Press:** every button that is not magnetic scales to 0.97 on `:active` (a bare icon button scales to 0.94), so a tap is acknowledged.
-- **Icon buttons (rail Previous/Next):** the glyph is drawn at 28×18px inside a 44×44px hit area, House Light, Ember on hover and focus.
+- **Icon buttons (rail Previous/Next):** a 44px circle with a 1px white/15 ring, a 20×13px glyph, House Light; the ring and glyph turn Ember on hover and focus. The ring is what tells a thumb it is a button.
 
 ### Category tabs (nav)
 Label type in House Light, 45px tall for touch. The active tab is Ember with a 1px ember underline that draws from the left (420ms, expo). On hover, the underline grows a third of the way as a hint.
@@ -215,7 +215,7 @@ Label type in House Light, 45px tall for touch. The active tab is Ember with a 1
 A WebGL room of seawater in a 16px frame. The chooser card carries the discipline name alone, centred, in Display 2 white with a close shadow for the Didone hairlines. A project card credits its type top-left (Caption-size Label, white/75) and its number top-right (mono Caption), with the title in Display 3, a Small blurb and a Label CTA at the bottom.
 
 ### Spec sheet (dotted rows)
-The key is in Exit Sign capitals, a dotted leader runs across, and the value is in Projection White, all in mono at Caption size (13px). It is used in the contact card and the project detail.
+The key is in Exit Sign capitals, a dotted leader runs across, and the value is in Projection White, all in mono at Caption size (13px). Below 768px the key sits above its value and the leader is dropped. It is used in the contact card and the project detail.
 
 ## Motion
 
@@ -232,6 +232,8 @@ Two speeds, three curves: UI answers fast and scenes breathe.
 | `--ease-dissolve` | cubic-bezier(0.4, 0, 0.2, 1) | cross-fades between scenes: the loader lifting, the hero film changing |
 
 - The scroll engine and WebGL own continuous motion, and they are integrated per frame rather than tweened. Any clock that the cursor can speed up is integrated, never computed as `time × speed`.
+- **Stage titles rise into frame** (`<Reveal>`): the line is clipped by its own box and lifts 105% over 900ms on the expo curve the first time it is 60% in view, and again when its text changes. Visible by default; only armed by script.
+- **Frames answer the pointer:** a lift of 6px on hover (420ms, expo), a press to scale 0.985.
 - One authored moment per stage. The project detail's entrance (media focus-pull, then the title rising word by word, then the details) is the only staggered sequence on the site.
 - `prefers-reduced-motion`: CSS transitions collapse to instant, GSAP sets the end state, the tanks freeze on a still frame, and the connect field drops its blur.
 

@@ -199,8 +199,8 @@ export default function RulerCarousel({
         ref={trackRef}
         className={
           tall
-            ? "rail-track relative grid h-[64vh] min-h-[400px] touch-pan-y place-items-center"
-            : "rail-track relative grid h-[54vh] min-h-[360px] touch-pan-y place-items-center"
+            ? "rail-track relative grid h-[60vh] min-h-[400px] touch-pan-y place-items-center"
+            : "rail-track relative grid h-[50vh] min-h-[360px] touch-pan-y place-items-center"
         }
       >
         {/* The mark the rail centres on. It sits *behind* the cards: at z-20 it
@@ -362,11 +362,11 @@ function Step({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="hit grid place-items-center text-muted transition-[color,scale] hover:text-accent focus-visible:text-accent active:scale-[0.94]"
+      className="grid size-11 place-items-center rounded-full border border-white/15 text-muted transition-[color,border-color,scale] hover:border-accent/60 hover:text-accent focus-visible:text-accent active:scale-[0.94]"
     >
       <svg
-        width="28"
-        height="18"
+        width="20"
+        height="13"
         viewBox="0 0 22 14"
         aria-hidden
         /* the drawn glyph is a rewind (bar on the left, apexes pointing left),
@@ -384,7 +384,7 @@ function Rule({ flipped = false }: { flipped?: boolean }) {
   return (
     <div
       aria-hidden
-      className="relative h-6 w-full overflow-hidden"
+      className={`relative h-6 w-full overflow-hidden ${flipped ? "rail-rule-b" : ""}`}
       style={{ transform: flipped ? "scaleY(-1)" : undefined }}
     >
       <div
