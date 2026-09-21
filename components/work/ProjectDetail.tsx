@@ -50,7 +50,7 @@ export default function ProjectDetail() {
         gsap.set(root.current, { opacity: 1 });
         return;
       }
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
       tl.fromTo(root.current, { opacity: 0 }, { opacity: 1, duration: 0.35 })
         .fromTo(
           "[data-detail-media]",
@@ -154,7 +154,7 @@ export default function ProjectDetail() {
       {/* Two ways out, at the two places people look for one. */}
       <button
         onClick={close}
-        className="glass fixed left-5 top-5 z-10 flex items-center gap-2.5 rounded-full px-4 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted transition-colors duration-300 hover:text-accent md:left-8 md:top-8"
+        className="glass fixed left-5 top-5 z-10 flex items-center gap-2.5 rounded-full px-4 py-3 text-label uppercase text-muted transition-[color,scale] active:scale-[0.97] hover:text-accent md:left-8 md:top-8"
       >
         <svg width="16" height="9" viewBox="0 0 16 9" aria-hidden>
           <path
@@ -170,7 +170,7 @@ export default function ProjectDetail() {
       <button
         onClick={close}
         aria-label="Close project"
-        className="glass fixed right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full text-muted transition-colors duration-300 hover:text-accent md:right-8 md:top-8"
+        className="glass fixed right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full text-muted transition-[color,scale] active:scale-[0.97] hover:text-accent md:right-8 md:top-8"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
           <path d="M1 1 13 13M13 1 1 13" stroke="currentColor" strokeWidth="1.4" />
@@ -181,7 +181,7 @@ export default function ProjectDetail() {
           A 1440x700 laptop is a wide screen and a short one, and fixed vertical
           rhythm on a short screen pushed the call to action off the bottom. */}
       <div
-        className="mx-auto grid min-h-full max-w-[1400px] grid-cols-1 items-center gap-8 px-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-12"
+        className="mx-auto grid min-h-full max-w-page grid-cols-1 items-center gap-8 px-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-12"
         style={{
           paddingTop: "clamp(5rem, 12vh, 7rem)",
           paddingBottom: "clamp(3rem, 8vh, 6rem)",
@@ -189,7 +189,7 @@ export default function ProjectDetail() {
       >
         {/* media */}
         <div data-detail-media className="relative">
-          <div className="glass glass-rim relative overflow-hidden rounded-lg">
+          <div className="glass glass-rim relative overflow-hidden rounded-frame">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={active.thumbnail}
@@ -211,11 +211,7 @@ export default function ProjectDetail() {
         {/* script */}
         <div className="relative">
           <div className="scrim pointer-events-none absolute -inset-10 -z-10 lg:hidden" />
-          <p data-detail-block className="eyebrow">
-            {active.eyebrow}
-          </p>
-
-          <h2 className="display mt-4 overflow-hidden text-[clamp(2.2rem,5.2vw,4.2rem)]">
+          <h2 className="display overflow-hidden text-display-2">
             {active.title.split(" ").map((w, i) => (
               <span key={`${w}-${i}`} className="inline-block overflow-hidden">
                 <span data-word className="inline-block">
@@ -226,12 +222,18 @@ export default function ProjectDetail() {
             ))}
           </h2>
 
+          {/* the credit follows the title, as it does on a title card —
+              above it, it was a kicker the title did not need */}
+          <p data-detail-block className="eyebrow mt-4">
+            {active.eyebrow}
+          </p>
+
           <div data-detail-block className="hair my-6 lg:my-8" />
 
           <dl className="flex flex-col gap-2.5 lg:gap-3">
             {spec.map(([k, v]) => (
               <div data-detail-block key={k} className="dotted text-muted">
-                <dt className="uppercase tracking-[0.18em] text-faint">{k}</dt>
+                <dt className="uppercase tracking-[0.2em] text-faint">{k}</dt>
                 {/*
                   * Tagged per value, not per row. `tools` is almost always
                   * bare product names — Blender, TouchDesigner, Adobe XD —
@@ -250,7 +252,7 @@ export default function ProjectDetail() {
             data-detail-block
             /* `summary` keeps the portfolio's paragraph breaks as "\n\n" */
             lang="ko"
-            className="mt-6 max-w-[52ch] whitespace-pre-line text-[14px] leading-[1.85] text-muted lg:mt-8"
+            className="mt-6 max-w-[52ch] whitespace-pre-line text-body text-muted lg:mt-8"
           >
             {active.summary}
           </p>
@@ -273,13 +275,13 @@ export default function ProjectDetail() {
                  "coming soon" on its own reads as a broken control — so say
                  what is true and point at the way through instead. Add the
                  link at /studio while running `next dev`. */
-              <p className="max-w-[38ch] text-[13px] leading-[1.7] text-faint">
+              <p className="max-w-[38ch] text-small text-faint">
                 This project isn&rsquo;t published anywhere public yet.{" "}
                 <a
                   href={`mailto:${EMAIL}?subject=${encodeURIComponent(
                     `About ${active.title}`,
                   )}`}
-                  className="text-muted underline decoration-white/25 underline-offset-4 transition-colors duration-300 hover:text-accent"
+                  className="text-muted underline decoration-white/25 underline-offset-4 transition-colors hover:text-accent"
                 >
                   Ask me about it
                 </a>
@@ -292,11 +294,11 @@ export default function ProjectDetail() {
 
       <div
         aria-hidden
-        className={`pointer-events-none sticky bottom-0 -mt-24 flex h-24 items-end justify-center bg-gradient-to-t from-black/85 to-transparent pb-5 transition-opacity duration-500 ${
+        className={`pointer-events-none sticky bottom-0 -mt-24 flex h-24 items-end justify-center bg-gradient-to-t from-black/85 to-transparent pb-5 transition-opacity duration-[420ms] ${
           more ? "opacity-100" : "opacity-0"
         }`}
       >
-        <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted">
+        <span className="text-label uppercase text-muted">
           Scroll for details
         </span>
       </div>

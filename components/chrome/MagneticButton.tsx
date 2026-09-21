@@ -45,18 +45,16 @@ export default function MagneticButton({
 
   const cls = [
     "relative inline-flex items-center gap-3 overflow-hidden border border-white/25",
-    "px-7 py-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink",
-    "transition-[transform,border-color,background-color] duration-500",
+    "px-7 py-4 text-label uppercase text-ink",
+    "transition-[transform,border-color,background-color] duration-[420ms] ease-out-expo",
     "hover:border-accent hover:bg-accent-soft",
     className,
   ].join(" ");
 
-  const style = { transitionTimingFunction: "cubic-bezier(.16,1,.3,1)" } as const;
-
   const glow = (
     <span
       aria-hidden
-      className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover/mag:opacity-100"
+      className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-[420ms] group-hover/mag:opacity-100"
       style={{
         background:
           "radial-gradient(140px circle at var(--gx,50%) var(--gy,50%), rgba(255,77,28,0.35), transparent 65%)",
@@ -83,7 +81,6 @@ export default function MagneticButton({
         onPointerMove={move}
         onPointerLeave={reset}
         className={`group/mag ${cls}`}
-        style={style}
       >
         {body}
       </a>
@@ -97,7 +94,6 @@ export default function MagneticButton({
       onPointerLeave={reset}
       onClick={onClick}
       className={`group/mag ${cls}`}
-      style={style}
     >
       {body}
     </button>

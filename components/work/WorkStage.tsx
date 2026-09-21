@@ -84,12 +84,12 @@ export default function WorkStage() {
     >
       <div className="sticky top-0 flex h-svh w-full flex-col overflow-hidden">
         <header className="work-head shrink-0 px-5 pt-[calc(var(--nav-h)+4vh)] md:px-12">
-          <div className="mx-auto w-full max-w-[1500px]">
+          <div className="mx-auto w-full max-w-page">
             {isOpen ? (
               <>
                 <button
                   onClick={() => setCategory("all")}
-                  className="eyebrow eyebrow-dim flex items-center gap-2 transition-colors duration-300 hover:text-accent"
+                  className="eyebrow eyebrow-dim flex h-[13px] items-center gap-2 transition-colors hover:text-accent"
                 >
                   <svg width="16" height="9" viewBox="0 0 16 9" aria-hidden>
                     <path
@@ -101,14 +101,17 @@ export default function WorkStage() {
                   </svg>
                   All work
                 </button>
-                <h2 className="display mt-3 text-[clamp(1.35rem,2.4vw,1.9rem)]">
+                <h2 className="display mt-3 text-display-4">
                   {label}
                 </h2>
               </>
             ) : (
               <>
-                <p className="eyebrow">Selected Work</p>
-                <h2 className="display mt-3 text-[clamp(1.35rem,2.4vw,1.9rem)]">
+                {/* No kicker above the heading. The row stays, empty, so the
+                    heading sits on the same line in both states and the rail
+                    below it does not jump when a discipline opens. */}
+                <div aria-hidden className="h-[13px]" />
+                <h2 className="display mt-3 text-display-4">
                   Choose a discipline
                 </h2>
               </>
@@ -131,7 +134,7 @@ export default function WorkStage() {
           />
         </div>
 
-        <p className="work-cue pointer-events-none shrink-0 pb-7 text-center font-mono text-[12px] tracking-[0.18em] text-muted md:text-[10px] md:tracking-[0.24em] md:text-faint">
+        <p className="work-cue pointer-events-none shrink-0 pb-7 text-center text-label text-muted md:text-faint">
           {/* the gesture differs by pointer, so the cue has to as well */}
           <span className="max-[899px]:hidden">SCROLL TO BROWSE</span>
           <span className="min-[900px]:hidden">SWIPE TO BROWSE</span>

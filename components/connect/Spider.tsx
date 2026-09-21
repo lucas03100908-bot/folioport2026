@@ -274,7 +274,7 @@ export default function Spider() {
         resolveTarget={resolveTarget}
         onBodies={onBodies}
         getScatter={getScatter}
-        className="fixed inset-0 z-[12] transition-opacity duration-700"
+        className="fixed inset-0 z-[12] transition-opacity duration-[900ms] ease-dissolve"
       />
 
       {/* Asked once, in the middle of the screen, because iOS will only hand
@@ -292,26 +292,25 @@ export default function Spider() {
             onClick={remember}
             className="absolute inset-0 bg-black/60 backdrop-blur-[3px]"
           />
-          <div className="glass glass-rim relative w-full max-w-[330px] rounded-2xl px-7 py-8 text-center">
-            <p className="eyebrow">Motion access</p>
-            <p className="display mt-3 text-[26px] leading-[1.1] text-ink">
+          <div className="glass glass-rim relative w-full max-w-[330px] rounded-frame px-7 py-8 text-center">
+            <p className="display text-display-3 leading-[1.1] text-ink">
               Let them follow
               <br />
               your tilt
             </p>
-            <p className="mt-4 text-[13px] leading-[1.7] text-muted">
+            <p className="mt-4 text-small text-muted">
               Allow motion and the spiders walk against the way you lean the
               phone. Every link works either way.
             </p>
             <button
               onClick={askGyro}
-              className="mt-7 w-full rounded-full bg-accent px-6 py-4 font-mono text-[11px] uppercase tracking-[0.2em] text-black"
+              className="mt-7 w-full rounded-full bg-accent px-6 py-4 text-label uppercase text-black transition-[scale] active:scale-[0.97]"
             >
               Allow
             </button>
             <button
               onClick={remember}
-              className="mt-1 w-full px-6 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-faint"
+              className="mt-1 w-full px-6 py-3 text-label uppercase text-faint"
             >
               Not now
             </button>
@@ -322,7 +321,7 @@ export default function Spider() {
       {needsGyro && active && asked && (
         <button
           onClick={askGyro}
-          className="glass fixed inset-x-0 bottom-24 z-[13] mx-auto w-fit rounded-full px-5 py-3 font-mono text-[12px] tracking-[0.2em] text-muted transition-colors duration-300 hover:text-ink"
+          className="glass fixed inset-x-0 bottom-24 z-[13] mx-auto w-fit rounded-full px-5 py-3 text-label text-muted transition-colors hover:text-ink"
         >
           TAP TO LET THEM FOLLOW YOUR TILT
         </button>

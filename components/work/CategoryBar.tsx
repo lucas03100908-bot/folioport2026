@@ -34,25 +34,25 @@ export default function CategoryBar() {
             aria-current={on ? "true" : undefined}
             onClick={() => setCategory(c.id)}
             className={[
-              /* py-3.5 rather than py-2: at 33px these fell short of a
+              /* py-4 rather than py-2: at 33px these fell short of a
                  comfortable touch target, and they are the first control
-                 anyone meets on a phone. 45px, inside a 64px nav row. */
-              "group relative shrink-0 whitespace-nowrap px-3 py-3.5 text-[11px] font-semibold uppercase tracking-[0.16em]",
-              "transition-colors duration-300",
+                 anyone meets on a phone. 45px (the label's 13.2px line plus
+                 32), inside a 64px nav row. */
+              "group relative shrink-0 whitespace-nowrap px-3 py-4 text-label uppercase",
+              "transition-colors",
               on ? "text-accent" : "text-muted hover:text-ink",
             ].join(" ")}
           >
             <span className="hidden sm:inline">{c.label}</span>
             <span className="sm:hidden">{c.short}</span>
-            <span className="ml-1.5 font-mono text-[10px] opacity-70">
+            <span className="ml-1.5 font-mono text-meta tracking-normal opacity-70">
               ({countFor(c.id)})
             </span>
             <span
               className={[
-                "absolute inset-x-2 -bottom-px h-px origin-left bg-accent transition-transform duration-500",
+                "absolute inset-x-2 -bottom-px h-px origin-left bg-accent transition-transform duration-[420ms] ease-out-expo",
                 on ? "scale-x-100" : "scale-x-0 group-hover:scale-x-[0.35]",
               ].join(" ")}
-              style={{ transitionTimingFunction: "cubic-bezier(.16,1,.3,1)" }}
             />
           </button>
         );

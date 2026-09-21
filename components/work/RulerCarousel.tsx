@@ -6,9 +6,8 @@ import { getLenis, railScrollTo } from "@/components/ScrollEngine";
 import { clamp, railStride, view } from "@/lib/state";
 
 /**
- * The chooser title's letter-spacing and shadow, inline because `.display`
- * is unlayered CSS that sets its own letter-spacing, and under Tailwind v4 an
- * unlayered rule beats any tracking utility.
+ * The chooser title's shadow (its tracking is the `tracking-[0.02em]` on the
+ * element — `.display` is in the components layer now, so a utility wins).
  *
  * Fiona is a Didone: its hairlines are a pixel or two wide, and over a lit,
  * moving room they break up well before the thick strokes do, which is why
@@ -20,7 +19,6 @@ import { clamp, railStride, view } from "@/lib/state";
  * rather than as a drop shadow.
  */
 const CHOOSER_TITLE = {
-  letterSpacing: "0.02em",
   textShadow: "0 1px 1px rgba(0,0,0,0.30), 0 0 18px rgba(0,0,0,0.32)",
 } as const;
 
@@ -259,14 +257,14 @@ export default function RulerCarousel({
                  * ("Motion·3D, 08 Projects"). The name is the only thing left
                  * to read, so it is the only thing there.
                  *
-                 * 25.6px on a phone, 50.7 at 1014, 62.4 at 1440.
+                 * `display-2`: 28px on a phone, 50.7 at 1014, 64 at 1440.
                  *
                  * The middle of the card is the back wall of a lit gallery, so
                  * the tank dims softly behind the type (see LiquidTank). No
                  * "Enter": the card is the button.
                  */
                 <span
-                  className="display block text-[clamp(1.6rem,5vw,3.9rem)] leading-[0.9] text-white"
+                  className="display block text-display-2 leading-[0.9] tracking-[0.02em] text-white"
                   style={CHOOSER_TITLE}
                 >
                   {it.title}
@@ -277,13 +275,13 @@ export default function RulerCarousel({
                     <span className="eyebrow eyebrow-lg text-white/75">
                       {it.eyebrow}
                     </span>
-                    <span className="font-mono text-[13px] tabular-nums text-white/60">
+                    <span className="font-mono text-caption tracking-normal tabular-nums text-white/60">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                   </span>
 
                   <span className="block">
-                    <span className="display block truncate text-[clamp(1.7rem,3.7vw,3rem)] leading-[0.95] text-white">
+                    <span className="display block truncate text-display-3 leading-[0.95] text-white">
                       {it.title}
                     </span>
 
@@ -294,12 +292,12 @@ export default function RulerCarousel({
                     {it.blurb ? (
                       <span
                         lang="ko"
-                        className="rail-blurb mt-2.5 block max-w-[46ch] text-[12.5px] leading-[1.55] text-white/70 md:text-[13px]"
+                        className="rail-blurb mt-2.5 block max-w-[46ch] text-small text-white/70"
                       >
                         {it.blurb}
                       </span>
                     ) : null}
-                    <span className="mt-4 flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.26em] text-white/85">
+                    <span className="mt-4 flex items-center gap-2.5 text-label uppercase text-white/85">
                       {cta}
                       <svg
                         width="19"
@@ -331,7 +329,7 @@ export default function RulerCarousel({
           label="Previous"
           onClick={() => railScrollTo(current() - 1)}
         />
-        <p className="font-mono text-[13px] tracking-[0.24em] text-muted tabular-nums">
+        <p className="font-mono text-caption text-muted tabular-nums">
           <span data-engine="rail-counter" className="text-ink">
             01
           </span>
@@ -364,7 +362,7 @@ function Step({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="text-muted transition-colors duration-300 hover:text-accent focus-visible:text-accent"
+      className="text-muted transition-colors hover:text-accent focus-visible:text-accent"
     >
       <svg
         width="28"

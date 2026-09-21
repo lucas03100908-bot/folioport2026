@@ -6,10 +6,10 @@ export default function Nav() {
   return (
     <header className="fixed inset-x-0 top-0 z-50">
       <div className="glass border-x-0 border-t-0">
-        <div className="mx-auto flex h-[var(--nav-h)] max-w-[1400px] items-center gap-4 px-5 md:px-12">
+        <div className="mx-auto flex h-[var(--nav-h)] max-w-page items-center gap-4 px-5 md:px-12">
           <a
             href="#top"
-            className="shrink-0 text-[13px] font-extrabold uppercase tracking-[0.3em] text-ink transition-colors duration-300 hover:text-accent"
+            className="shrink-0 text-[13px] font-extrabold uppercase tracking-[0.3em] text-ink transition-colors hover:text-accent"
           >
             Minho
           </a>

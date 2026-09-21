@@ -171,7 +171,7 @@ export default function ReelStage() {
           ref={frame}
           data-engine="reel-frame"
           className="engine-driven relative overflow-hidden bg-black"
-          style={{ width: "26vw", height: "40vh", borderRadius: "14px" }}
+          style={{ width: "26vw", height: "40vh", borderRadius: "16px" }}
         >
           <video
             ref={main}
@@ -196,7 +196,7 @@ export default function ReelStage() {
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-5 md:px-10">
           <h2
             data-engine="reel-title"
-            className="whitespace-nowrap text-center text-[clamp(2.2rem,7.5vw,6.5rem)] uppercase leading-none text-white"
+            className="whitespace-nowrap text-center text-[clamp(2.2rem,7.5vw,6rem)] uppercase leading-none text-white"
             style={{
               mixBlendMode: "difference",
               // a heavy grotesque, not the Didone used elsewhere: this reads as
@@ -214,13 +214,13 @@ export default function ReelStage() {
         <div className="pointer-events-none absolute inset-x-0 bottom-10 z-10 flex justify-center">
           <span
             data-engine="reel-cue-a"
-            className="engine-driven absolute whitespace-nowrap font-mono text-[12px] tracking-[0.18em] text-ink md:text-[10px] md:tracking-[0.24em] md:text-muted"
+            className="engine-driven absolute whitespace-nowrap text-label text-ink md:text-muted"
           >
             SCROLL TO EXPAND
           </span>
           <span
             data-engine="reel-cue-b"
-            className="engine-driven absolute flex items-center gap-3 whitespace-nowrap font-mono text-[12px] tracking-[0.18em] text-accent opacity-0 md:text-[10px] md:tracking-[0.24em]"
+            className="engine-driven absolute flex items-center gap-3 whitespace-nowrap text-label text-accent opacity-0"
           >
             KEEP SCROLLING
             <svg width="9" height="16" viewBox="0 0 9 16" aria-hidden>

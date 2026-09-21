@@ -55,7 +55,7 @@ function Rows({ interactive }: { interactive: boolean }) {
                       /* Reachable by pointer, invisible to tab and to a screen
                          reader — see the note on the layer below. */
                       tabIndex={-1}
-                      className="display px-[0.18em] text-[clamp(2rem,6vw,5.5rem)] transition-colors duration-300 hover:text-accent focus-visible:text-accent"
+                      className="display px-[0.18em] text-display-1 transition-colors hover:text-accent focus-visible:text-accent"
                     >
                       {s.label}
                       <span aria-hidden className="ml-[0.18em] text-accent">
@@ -65,7 +65,7 @@ function Rows({ interactive }: { interactive: boolean }) {
                   ) : (
                     <span
                       key={`${row}-${rep}-${s.label}`}
-                      className="display px-[0.18em] text-[clamp(2rem,6vw,5.5rem)]"
+                      className="display px-[0.18em] text-display-1"
                     >
                       {s.label}
                       <span className="ml-[0.18em] text-accent">·</span>
@@ -133,7 +133,7 @@ export default function ConnectField() {
   }, [active]);
 
   const shell =
-    "connect-field fixed inset-0 z-[11] flex flex-col justify-center gap-[1.5vh] overflow-hidden transition-opacity duration-[900ms] ease-out";
+    "connect-field fixed inset-0 z-[11] flex flex-col justify-center gap-[1.5vh] overflow-hidden transition-opacity duration-[900ms] ease-out-expo";
 
   return (
     <>

@@ -31,7 +31,7 @@ export default function Hero() {
             isolates the blend group and would leave the type plain white.
             DOM order alone puts it above the film. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-24 md:px-12 md:pb-28">
-          <div className="mx-auto w-full max-w-[1500px]">
+          <div className="mx-auto w-full max-w-page">
             <div className="w-[min(880px,62vw)] min-w-[260px] max-sm:w-[88vw]">
               <HeroTitle />
             </div>
@@ -44,7 +44,7 @@ export default function Hero() {
           data-stage="hero"
           className="engine-driven absolute inset-x-0 bottom-0 z-20 px-5 pb-10 md:px-12 md:pb-12"
         >
-          <div className="mx-auto flex w-full max-w-[1500px] items-end justify-between gap-10">
+          <div className="mx-auto flex w-full max-w-page items-end justify-between gap-10">
             <div>
               <p className="eyebrow">Kim Minho / 김민호</p>
               <p className="tagrow mt-3">
@@ -58,7 +58,7 @@ export default function Hero() {
               onClick={() => scrollToStage("work", !view.reduced)}
               className="group hidden items-center gap-4 pb-1 md:flex"
             >
-              <span className="eyebrow eyebrow-dim transition-colors duration-300 group-hover:text-accent">
+              <span className="eyebrow eyebrow-dim transition-colors group-hover:text-accent">
                 Scroll
               </span>
               <span className="relative block h-9 w-px overflow-hidden bg-white/25">

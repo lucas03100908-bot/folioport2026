@@ -119,7 +119,7 @@ export default function HeroBackground() {
           until the first frame decodes (and if JS never runs, the video still
           paints over it) */}
       <div
-        className="absolute inset-0 transition-opacity duration-700"
+        className="absolute inset-0 transition-opacity duration-[900ms] ease-dissolve"
         style={{
           opacity: ready ? 0 : 1,
           background:

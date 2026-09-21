@@ -27,7 +27,7 @@ export default function ProgressRail() {
              and only because the ticks sit over the card there. */
           className="group flex items-center justify-end gap-3 py-1.5"
         >
-          <span className="hidden text-[9px] uppercase tracking-[0.24em] text-muted opacity-0 transition-opacity duration-300 group-hover:opacity-100 lg:block">
+          <span className="hidden text-label uppercase text-muted opacity-0 transition-opacity group-hover:opacity-100 lg:block">
             {STAGE_LABELS[s]}
           </span>
           <span

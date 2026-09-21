@@ -19,10 +19,10 @@ export default function ConnectStage() {
       <div className="sticky top-0 flex h-svh w-full items-end justify-center px-5 pb-20 md:px-12">
         <div className="relative flex flex-col items-center gap-3 text-center">
           <p className="eyebrow">Connect</p>
-          <p className="px-6 text-[13px] leading-relaxed tracking-[0.1em] text-ink/80 md:text-[12px] md:tracking-[0.14em] md:text-muted">
+          <p className="px-6 text-small tracking-[0.06em] text-ink/80 md:text-muted">
             Follow it — every word is a link.
           </p>
-          <p className="px-6 font-mono text-[11px] uppercase tracking-[0.2em] text-muted md:text-[10px] md:tracking-[0.24em]">
+          <p className="px-6 text-label uppercase text-muted">
             {/* same split the work stage uses for scroll vs swipe */}
             <span className="max-[899px]:hidden">Move the cursor to read them</span>
             <span className="min-[900px]:hidden">Tilt the phone to read them</span>

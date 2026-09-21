@@ -236,7 +236,7 @@ export function writeReel(c: FrameContext) {
 
   nodes.reelFrame.style.width = `${lerp(startW, 100, e).toFixed(2)}vw`;
   nodes.reelFrame.style.height = `${lerp(startH, 100, e).toFixed(2)}vh`;
-  nodes.reelFrame.style.borderRadius = `${lerp(14, 0, e).toFixed(1)}px`;
+  nodes.reelFrame.style.borderRadius = `${lerp(16, 0, e).toFixed(1)}px`;
 
   if (nodes.reelVeil)
     nodes.reelVeil.style.opacity = lerp(0.4, 0.1, e).toFixed(3);

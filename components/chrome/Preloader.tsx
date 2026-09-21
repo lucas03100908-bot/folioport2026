@@ -173,7 +173,7 @@ export default function Preloader() {
         opacity: done ? 0 : 1,
         /* Slow on purpose. The film underneath is a slow thing, and a cover
            that snaps away makes the first frame feel like a jump cut. */
-        transition: "opacity 1100ms cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "opacity 1100ms var(--ease-dissolve)",
         pointerEvents: done ? "none" : "auto",
       }}
       aria-hidden={done}
@@ -203,13 +203,13 @@ export default function Preloader() {
         ))}
       </p>
 
-      <p className="mt-6 font-mono text-[13px] uppercase tracking-[0.3em] text-muted md:mt-5 md:text-[11px] md:tracking-[0.34em]">
+      <p className="mt-6 text-label uppercase tracking-[0.3em] text-muted md:mt-5">
         is waking
       </p>
 
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-5 pb-10 md:px-12">
         <span className="eyebrow">Minho — Portfolio</span>
-        <span className="font-mono text-[11px] tracking-[0.2em] text-muted tabular-nums">
+        <span className="font-mono text-meta text-muted tabular-nums">
           {String(Math.round(pct)).padStart(3, "0")}
         </span>
       </div>
@@ -218,7 +218,7 @@ export default function Preloader() {
         className="absolute inset-x-0 bottom-0 h-px origin-left bg-accent"
         style={{
           transform: `scaleX(${pct / 100})`,
-          transition: "transform 420ms cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: "transform var(--dur-state) var(--ease-out)",
         }}
       />
     </div>
