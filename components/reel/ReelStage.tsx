@@ -58,7 +58,7 @@ export default function ReelStage() {
             className="engine-driven pointer-events-none absolute inset-0 opacity-0"
             style={{
               background:
-                "linear-gradient(180deg, transparent 0%, transparent 52%, rgba(150,34,10,0.30) 57.5%, rgba(255,86,30,0.72) 60.5%, rgba(255,140,70,0.30) 63%, rgba(40,10,4,0.18) 67%, transparent 76%)",
+                "linear-gradient(180deg, transparent 0%, transparent 62%, rgba(255,120,40,0.1) 66%, rgba(255,150,70,0.16) 70%, rgba(255,120,40,0.06) 74%, transparent 80%)",
               mixBlendMode: "screen",
             }}
             aria-hidden="true"
@@ -68,22 +68,23 @@ export default function ReelStage() {
             className="engine-driven pointer-events-none absolute inset-0 opacity-0"
             style={{
               background:
-                "radial-gradient(56% 42% at 50% 2%, rgba(255,226,190,0.30) 0%, rgba(255,150,80,0.09) 44%, transparent 76%)",
+                "radial-gradient(40% 32% at var(--mask-x, 50%) -6%, rgba(255,238,214,0.4) 0%, rgba(255,186,130,0.1) 46%, transparent 74%)",
+            }}
+            aria-hidden="true"
+          />
+          {/* The wall darkens behind the piece — without it the mask reads
+              as a cut-out laid on the painting rather than a thing standing
+              in front of it. */}
+          <div
+            data-engine="reel-seat"
+            className="engine-driven pointer-events-none absolute inset-0 opacity-0"
+            style={{
+              background:
+                "radial-gradient(26% 34% at var(--mask-x, 50%) 68%, rgba(2,6,30,0.62) 0%, rgba(2,6,30,0.32) 45%, transparent 76%)",
             }}
             aria-hidden="true"
           />
           <MaskScene className="absolute inset-0 h-full w-full" />
-          {/* the pool on the floor, over the mask's own foot so the piece
-              stands in the light rather than in front of it */}
-          <div
-            data-engine="reel-pool"
-            className="engine-driven pointer-events-none absolute inset-x-0 bottom-0 h-[38%] opacity-0"
-            style={{
-              background:
-                "radial-gradient(60% 100% at 50% 100%, rgba(255,190,140,0.20) 0%, rgba(255,120,60,0.06) 45%, transparent 78%)",
-            }}
-            aria-hidden="true"
-          />
           {/* cinema: the corners fall away, and the whole frame keeps a little
               of the lamp's warmth */}
           <div
@@ -91,8 +92,22 @@ export default function ReelStage() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(112% 86% at 50% 44%, transparent 30%, rgba(0,0,0,0.42) 62%, rgba(0,0,0,0.82) 88%, rgba(0,0,0,0.95) 100%)",
+                "radial-gradient(102% 82% at 50% 52%, transparent 34%, rgba(2,6,26,0.3) 66%, rgba(1,3,16,0.62) 88%, rgba(0,2,12,0.78) 100%)",
             }}
+          />
+          {/* The floor. In the reference room the only other lit thing is
+              the ground: a wide, soft pool directly under the piece that
+              falls to black well before the edges of the frame. It is an
+              ellipse rather than a circle because the floor is seen at a
+              grazing angle. */}
+          <div
+            data-engine="reel-pool"
+            className="engine-driven pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-0"
+            style={{
+              background:
+                "radial-gradient(48% 120% at var(--mask-x, 50%) 118%, rgba(255,246,232,0.42) 0%, rgba(255,226,196,0.22) 26%, rgba(210,160,120,0.08) 52%, transparent 78%)",
+            }}
+            aria-hidden="true"
           />
           <div
             data-engine="reel-veil"
@@ -101,66 +116,53 @@ export default function ReelStage() {
           />
 
           {/* ------------------------------------------------ the poster --
-              Hard blocks, one heavy word, and a justified paragraph: the
-              stage reads as a printed sheet laid over the room. It is only
-              set once the case is open — at card size there is no room for
-              type, and type shrunk to fit is not type. */}
+              The sheet the reference prints: the headline across the top in
+              two heavy lines with the wordmark tucked into its first line,
+              the small print justified straight underneath it, and the
+              subject below that — the type is the top of the page and the
+              piece is the bottom of it. Set once the case is open; at card
+              size there is no room for type, and type shrunk to fit is not
+              type. */}
           <div
             data-engine="reel-poster"
             className="engine-driven pointer-events-none absolute inset-0 opacity-0"
           >
-            <div className="absolute inset-0 px-gutter pb-[clamp(3.5rem,8vh,5rem)] pt-[calc(var(--nav-h)+1.25rem)]">
-              <div className="mx-auto flex h-full w-full max-w-page flex-col justify-between">
-                <div className="flex items-start justify-between gap-4">
-                  <span className="whitespace-nowrap bg-accent px-2.5 py-2 text-label uppercase text-black">
-                    Realtime<span className="hidden sm:inline"> · WebGL</span>
-                  </span>
-                  <span className="whitespace-nowrap border-2 border-white px-2.5 py-2 text-label uppercase text-ink">
-                    <span className="hidden sm:inline">One lamp · </span>91,213 tri
-                  </span>
+            <div className="absolute inset-0 px-gutter pb-[clamp(3.5rem,8vh,5rem)] pt-[calc(var(--nav-h)+1.5rem)]">
+              <div className="mx-auto w-full max-w-page">
+                <div className="relative">
+                  {/* the mark sits inside the headline's first line, as the
+                      reference sheet sets its own */}
+                  <p className="display absolute top-[0.1em] left-[0.06em] text-display-4 text-white md:left-[0.08em]">
+                    Minho
+                  </p>
+                  <p
+                    className="whitespace-nowrap text-[clamp(3.2rem,13.5vw,12rem)] font-black uppercase leading-[0.84] text-white"
+                    style={{ fontFamily: "var(--font-ui)", letterSpacing: "-0.05em" }}
+                  >
+                    <span className="block pl-[4.6em] md:pl-[3.4em]">Tal</span>
+                    <span className="block">Looks back</span>
+                  </p>
                 </div>
 
-                <div className="mt-auto">
-                  {/* The sheet's own mark, set in the site's Didone against
-                      the grotesque slab under it — the small serif signature
-                      over huge type that the reference sheet uses. */}
-                  <p className="display mb-1 text-display-4 text-white">Minho</p>
-                  <p
-                    className="whitespace-nowrap text-[clamp(4rem,19vw,16rem)] font-black uppercase leading-[0.78] text-white"
-                    style={{
-                      fontFamily: "var(--font-ui)",
-                      letterSpacing: "-0.05em",
-                      mixBlendMode: "difference",
-                    }}
-                  >
-                    Tal
-                  </p>
-                  {/* A justified block, set to the width of the word above
-                      it — the poster's small print. It is desktop-only: on a
-                      phone the same paragraph would be six lines over the
-                      mask's chin and under the cue. */}
-                  <p className="mt-5 hidden max-w-[62ch] text-justify text-small text-ink/75 md:block">
-                    A carved mask, lit by one lamp hung above it, turning to
-                    follow whoever is looking at it. One mesh of 91,213
-                    triangles, one light and one shader, drawn straight against
-                    WebGL2 — no scene library, 1.5MB all in.
-                  </p>
-                  <div className="mt-5 h-0.5 w-full max-w-[62ch] bg-white/85" />
-                  <p className="mt-2.5 flex max-w-[62ch] items-center justify-between font-mono text-meta text-ink/70">
-                    <span>WEBGL2</span>
-                    <span>SPOT · 1 LAMP</span>
-                    <span>NO LIBRARY</span>
-                  </p>
-                  {/* the printer's cross the sheet ends on */}
-                  <svg
-                    className="mt-5 text-white/80"
-                    width="22"
-                    height="22"
-                    viewBox="0 0 22 22"
-                    aria-hidden
-                  >
+                <div className="mt-3 h-0.5 w-full bg-white/90" />
+                <p className="mt-3 hidden max-w-[54ch] text-justify text-small text-white/90 md:block">
+                  A carved mask, lit by one lamp hung above it, turning to
+                  follow whoever is looking at it. One mesh of 91,213
+                  triangles, one light and one shader, drawn straight against
+                  WebGL2 — no scene library, 1.5MB all in.
+                </p>
+              </div>
+
+              <div className="absolute inset-x-0 bottom-[clamp(3.5rem,8vh,5rem)] px-gutter">
+                <div className="mx-auto flex w-full max-w-page items-end justify-between gap-6">
+                  <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden className="text-white">
                     <path d="M11 0v22M0 11h22" stroke="currentColor" strokeWidth="2" />
                   </svg>
+                  <p className="flex items-center gap-5 font-mono text-meta text-white/85">
+                    <span>WEBGL2</span>
+                    <span className="hidden sm:inline">SPOT · 1 LAMP</span>
+                    <span>NO LIBRARY</span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -171,13 +173,13 @@ export default function ReelStage() {
         <div className="pointer-events-none absolute inset-x-0 bottom-safe-[2.5rem] z-10 flex justify-center">
           <span
             data-engine="reel-cue-a"
-            className="engine-driven absolute whitespace-nowrap text-label text-ink md:text-muted"
+            className="engine-driven absolute whitespace-nowrap text-label text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
           >
             {reduced ? "SCROLL TO OPEN" : "SCROLL TO EXPAND"}
           </span>
           <span
             data-engine="reel-cue-b"
-            className="engine-driven absolute flex items-center gap-3 whitespace-nowrap text-label text-accent opacity-0"
+            className="engine-driven absolute flex items-center gap-3 whitespace-nowrap text-label text-white opacity-0 [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
           >
             KEEP SCROLLING
             <svg width="9" height="16" viewBox="0 0 9 16" aria-hidden>

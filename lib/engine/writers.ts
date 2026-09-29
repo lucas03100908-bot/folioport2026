@@ -239,7 +239,7 @@ export function writeReel(c: FrameContext) {
   nodes.reelFrame.style.borderRadius = `${lerp(16, 0, e).toFixed(1)}px`;
 
   if (nodes.reelVeil)
-    nodes.reelVeil.style.opacity = lerp(0.18, 0.04, e).toFixed(3);
+    nodes.reelVeil.style.opacity = lerp(0.14, 0.02, e).toFixed(3);
 
   /* the shader reads this to bring its own red rim up with the room */
   nodes.reelFrame.dataset.open = e.toFixed(3);
@@ -247,11 +247,15 @@ export function writeReel(c: FrameContext) {
   /* The painted wall comes up first — the case opens onto a room, and only
      then does the light in that room come on. */
   if (nodes.reelRoom)
-    nodes.reelRoom.style.opacity = (0.35 + 0.65 * smoothstep(0, 0.34, p)).toFixed(3);
+    /* The painted wall is a whisper: the reference room is black, and
+       anything the lamp does not reach should read as nothing. */
+    nodes.reelRoom.style.opacity = (0.55 + 0.45 * smoothstep(0, 0.34, p)).toFixed(3);
   if (nodes.reelHorizon)
     nodes.reelHorizon.style.opacity = smoothstep(0.06, 0.5, p).toFixed(3);
+  if (nodes.reelSeat)
+    nodes.reelSeat.style.opacity = smoothstep(0.05, 0.4, p).toFixed(3);
   if (nodes.reelPool)
-    nodes.reelPool.style.opacity = smoothstep(0.1, 0.6, p).toFixed(3);
+    nodes.reelPool.style.opacity = smoothstep(0.05, 0.45, p).toFixed(3);
 
   /* The sheet is set last: the case opens, the room lights, then the type
      lands on it. */

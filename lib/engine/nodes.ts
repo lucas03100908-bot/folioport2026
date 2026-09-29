@@ -38,6 +38,7 @@ export type EngineNodes = {
   reelRoom: HTMLElement | null;
   reelHorizon: HTMLElement | null;
   reelPool: HTMLElement | null;
+  reelSeat: HTMLElement | null;
   reelPoster: HTMLElement | null;
   reelVeil: HTMLElement | null;
   reelCueA: HTMLElement | null;
@@ -65,6 +66,7 @@ export const EMPTY_NODES: EngineNodes = {
   reelRoom: null,
   reelHorizon: null,
   reelPool: null,
+  reelSeat: null,
   reelPoster: null,
   reelVeil: null,
   reelCueA: null,
@@ -102,6 +104,7 @@ export function collectNodes(): EngineNodes {
     reelRoom: one('[data-engine="reel-room"]'),
     reelHorizon: one('[data-engine="reel-horizon"]'),
     reelPool: one('[data-engine="reel-pool"]'),
+    reelSeat: one('[data-engine="reel-seat"]'),
     reelPoster: one('[data-engine="reel-poster"]'),
     reelVeil: one('[data-engine="reel-veil"]'),
     reelCueA: one('[data-engine="reel-cue-a"]'),

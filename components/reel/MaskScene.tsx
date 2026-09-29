@@ -63,8 +63,8 @@ uniform float u_ready;
 uniform float u_horizon;
 
 const vec3 LIGHT = vec3(1.0, 0.94, 0.86);
-const vec3 FILL = vec3(0.32, 0.38, 0.52);
-const float CONE_IN = 0.92;   // cos of the hot core
+const vec3 FILL = vec3(0.30, 0.42, 0.78);
+const float CONE_IN = 0.95;   // cos of the hot core
 const float CONE_OUT = 0.42;  // cos of the outer edge
 
 /* Tangent frame from screen-space derivatives. The export carries no
@@ -115,7 +115,7 @@ void main() {
   /* Spot: a cone that softens toward its edge, and inverse-square falloff so
      the top of the mask is hotter than the chin. */
   float cone = smoothstep(CONE_OUT, CONE_IN, dot(-l, u_lightDir));
-  float atten = cone * 18.0 / (dist * dist);
+  float atten = cone * 42.0 / (dist * dist);
 
   float ndl = max(dot(n, l), 0.0);
   float ndv = max(dot(n, v), 1e-4);
@@ -133,12 +133,17 @@ void main() {
      lifted a little where the surface faces up, so the piece sits in a space
      instead of on a card. */
   float sky = n.y * 0.5 + 0.5;
-  vec3 ambient = albedo * FILL * mix(0.012, 0.05, sky);
+  vec3 ambient = albedo * FILL * mix(0.03, 0.085, sky) * (0.3 + 0.7 * u_horizon);
+
+  /* The floor throws a little of the lamp back up: the underside of a hung
+     piece is never black in a room with a lit floor under it. */
+  float up = max(-n.y, 0.0);
+  vec3 bounce = albedo * vec3(1.0, 0.84, 0.70) * up * 0.1 * cone;
 
   /* Rim: the cone grazing the silhouette. Tied to the light's own reach so it
      cannot glow where the lamp does not shine. */
   float rim = pow(1.0 - ndv, 3.6) * cone * 0.5;
-  vec3 col = direct + ambient + LIGHT * rim * albedo;
+  vec3 col = direct + ambient + bounce + LIGHT * rim * albedo;
 
   /* The second source is the room's own: a red band burning on the horizon
      behind the piece. It is behind, so the only thing it can do from here is
@@ -146,7 +151,7 @@ void main() {
      nothing at all where the surface faces the camera. */
   float edge = pow(1.0 - ndv, 2.6);
   float low = smoothstep(0.35, -0.45, v_world.y);
-  col += vec3(1.0, 0.16, 0.06) * edge * low * u_horizon * 0.85;
+  col += vec3(1.0, 0.16, 0.06) * edge * low * u_horizon * 0.5;
 
   /* Filmic shoulder, the same roll-off the water uses, then the sRGB the
      canvas is not doing for us. */
@@ -218,15 +223,15 @@ const norm = (a: number[]) => {
   const l = Math.hypot(a[0], a[1], a[2]) || 1;
   return [a[0] / l, a[1] / l, a[2] / l];
 };
-/** yaw about Y, then pitch about X, a uniform scale, then a sideways shift */
-const modelMatrix = (yaw: number, pitch: number, s: number, shiftX = 0) => {
+/** yaw about Y, then pitch about X, a uniform scale, then a shift */
+const modelMatrix = (yaw: number, pitch: number, s: number, shiftX = 0, shiftY = 0) => {
   const cy = Math.cos(yaw), sy = Math.sin(yaw);
   const cp = Math.cos(pitch), sp = Math.sin(pitch);
   return new Float32Array([
     cy * s, 0, -sy * s, 0,
     sy * sp * s, cp * s, cy * sp * s, 0,
     sy * cp * s, -sp * s, cy * cp * s, 0,
-    shiftX, 0, 0, 1,
+    shiftX, shiftY, 0, 1,
   ]);
 };
 /** the rotation part again, for normals (uniform scale, so no inverse needed) */
@@ -475,7 +480,12 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       const aspect = w / h;
       const fov = 0.62;
       const fit = Math.max(1, 1.05 / Math.max(aspect, 0.55));
-      const dist = (halfHeight * 1.28 * fit) / Math.tan(fov / 2);
+      /* Closed, the piece fills its card; open, it is a small thing in a large
+         dark room, which is what the room is for. */
+      /* A tall screen has no width to spare, so the piece stays large there;
+         a wide one can afford the room around it. */
+      const framing = 1.28 + (aspect > 1 ? 1.15 : 0.35) * state.horizon;
+      const dist = (halfHeight * framing * fit) / Math.tan(fov / 2);
       const eye = [0, 0.02, dist];
 
       gl.uniformMatrix4fv(u.proj, false, perspective(fov, aspect, dist * 0.2, dist * 3));
@@ -483,8 +493,22 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       /* On a wide screen the piece stands right of centre, which is what
          leaves the lower left of the frame to the type. It only moves once
          there is width to move in: on a phone it stays in the middle. */
-      const shiftX = aspect > 1.25 ? 0.42 * state.horizon : 0;
-      gl.uniformMatrix4fv(u.model, false, modelMatrix(state.yaw, state.pitch, 1, shiftX));
+      const shiftX = 0;
+      /* Down, into the lower half of the sheet: the headline is the top of
+         the page. */
+      const shiftY = (aspect > 1 ? -0.78 : -0.35) * state.horizon * halfHeight;
+      gl.uniformMatrix4fv(
+        u.model,
+        false,
+        modelMatrix(state.yaw, state.pitch, 1, shiftX, shiftY),
+      );
+      /* Where the piece hangs, in the frame's own coordinates, so the wires
+         above it and anything else the room hangs can follow it. */
+      const halfWidth = Math.tan(fov / 2) * dist * aspect;
+      canvas.parentElement?.style.setProperty(
+        "--mask-x",
+        `${(50 + (shiftX / halfWidth) * 50).toFixed(2)}%`,
+      );
       gl.uniformMatrix3fv(u.normal, false, normalMatrix(state.yaw, state.pitch));
       gl.uniform3f(u.eye, eye[0], eye[1], eye[2]);
 
