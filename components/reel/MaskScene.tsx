@@ -145,8 +145,8 @@ void main() {
      take the silhouette - hotter low on the mask, where the band sits, and
      nothing at all where the surface faces the camera. */
   float edge = pow(1.0 - ndv, 2.6);
-  float low = smoothstep(0.55, -0.35, v_world.y);
-  col += vec3(1.0, 0.16, 0.06) * edge * low * u_horizon * 1.35;
+  float low = smoothstep(0.35, -0.45, v_world.y);
+  col += vec3(1.0, 0.16, 0.06) * edge * low * u_horizon * 0.85;
 
   /* Filmic shoulder, the same roll-off the water uses, then the sRGB the
      canvas is not doing for us. */

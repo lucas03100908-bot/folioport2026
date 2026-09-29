@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { view } from "@/lib/state";
+import MaskRoom from "./MaskRoom";
 import MaskScene from "./MaskScene";
 
 /**
@@ -45,17 +46,20 @@ export default function ReelStage() {
           className="engine-driven relative overflow-hidden bg-[#040404]"
           style={{ width: "26vw", height: "40vh", borderRadius: "16px" }}
         >
-          {/* The room, in three flat layers behind the piece: a red band
-              burning on the horizon, the lamp's spill above it, and the pool
-              that lamp throws on the floor. The shader takes its own rim from
-              the band, so the light in the air and the light on the mask are
-              the same light. */}
+          {/* The room: a painted wall of mountains under a cobalt sky, then
+              the light in the air over it — a red band burning along the
+              ridge line, the lamp's spill above, and the pool that lamp
+              throws on the floor. The shader takes its own rim from the band,
+              so the light in the air and the light on the mask are one
+              light. */}
+          <MaskRoom />
           <div
             data-engine="reel-horizon"
             className="engine-driven pointer-events-none absolute inset-0 opacity-0"
             style={{
               background:
-                "linear-gradient(180deg, #040404 0%, #090403 44%, rgba(198,44,14,0.55) 57%, rgba(255,96,36,0.92) 61.5%, rgba(255,150,80,0.5) 64%, rgba(90,16,5,0.35) 70%, #040303 84%, #030303 100%)",
+                "linear-gradient(180deg, transparent 0%, transparent 52%, rgba(150,34,10,0.30) 57.5%, rgba(255,86,30,0.72) 60.5%, rgba(255,140,70,0.30) 63%, rgba(40,10,4,0.18) 67%, transparent 76%)",
+              mixBlendMode: "screen",
             }}
             aria-hidden="true"
           />
@@ -87,13 +91,13 @@ export default function ReelStage() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(120% 90% at 50% 42%, transparent 38%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.88) 100%)",
+                "radial-gradient(112% 86% at 50% 44%, transparent 30%, rgba(0,0,0,0.42) 62%, rgba(0,0,0,0.82) 88%, rgba(0,0,0,0.95) 100%)",
             }}
           />
           <div
             data-engine="reel-veil"
             className="engine-driven pointer-events-none absolute inset-0 bg-black"
-            style={{ opacity: 0.28 }}
+            style={{ opacity: 0.18 }}
           />
 
           {/* ------------------------------------------------ the poster --
@@ -117,15 +121,19 @@ export default function ReelStage() {
                 </div>
 
                 <div className="mt-auto">
+                  {/* The sheet's own mark, set in the site's Didone against
+                      the grotesque slab under it — the small serif signature
+                      over huge type that the reference sheet uses. */}
+                  <p className="display mb-1 text-display-4 text-white">Minho</p>
                   <p
-                    className="whitespace-nowrap text-[clamp(3.5rem,17vw,15rem)] font-black uppercase leading-[0.82] text-white"
+                    className="whitespace-nowrap text-[clamp(4rem,19vw,16rem)] font-black uppercase leading-[0.78] text-white"
                     style={{
                       fontFamily: "var(--font-ui)",
-                      letterSpacing: "-0.045em",
+                      letterSpacing: "-0.05em",
                       mixBlendMode: "difference",
                     }}
                   >
-                    Tal<span className="text-accent"> 탈</span>
+                    Tal
                   </p>
                   {/* A justified block, set to the width of the word above
                       it — the poster's small print. It is desktop-only: on a
@@ -143,6 +151,16 @@ export default function ReelStage() {
                     <span>SPOT · 1 LAMP</span>
                     <span>NO LIBRARY</span>
                   </p>
+                  {/* the printer's cross the sheet ends on */}
+                  <svg
+                    className="mt-5 text-white/80"
+                    width="22"
+                    height="22"
+                    viewBox="0 0 22 22"
+                    aria-hidden
+                  >
+                    <path d="M11 0v22M0 11h22" stroke="currentColor" strokeWidth="2" />
+                  </svg>
                 </div>
               </div>
             </div>
