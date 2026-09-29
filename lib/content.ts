@@ -151,14 +151,15 @@ export const HERO_BG_SRC = "/video/hero-bg.mp4";
  */
 export const HERO_BG_MOBILE_SRC = "/video/hero-bg-mobile.mp4";
 
-export const SHOWREEL_SRC = "/video/showreel.mp4";
 /**
- * The reel again at 320x180 for the glow behind the frame. That copy is
- * blurred by 70px, so every pixel past this is decoded only to be thrown
- * away — and it used to be a second full 720p decode running alongside the
- * real one. 612KB.
+ * The mask on the third screen: a quantised mesh and its maps, written by
+ * `tools/glb-to-mesh.mjs` from a 10.5MB glb. 1.5MB all in, fetched only once
+ * the stage is a viewport away.
  */
-export const SHOWREEL_GLOW_SRC = "/video/showreel-glow.mp4";
+export const MASK_MESH_SRC = "/model/tal.bin";
+export const MASK_MAPS = {
+  color: "/model/tal-color.webp",
+  normal: "/model/tal-normal.webp",
+  rough: "/model/tal-rough.webp",
+} as const;
 
-/** The reel runs fast on purpose. */
-export const SHOWREEL_PLAYBACK_RATE = 1.8;

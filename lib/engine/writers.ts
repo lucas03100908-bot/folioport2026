@@ -239,25 +239,12 @@ export function writeReel(c: FrameContext) {
   nodes.reelFrame.style.borderRadius = `${lerp(16, 0, e).toFixed(1)}px`;
 
   if (nodes.reelVeil)
-    nodes.reelVeil.style.opacity = lerp(0.4, 0.1, e).toFixed(3);
+    nodes.reelVeil.style.opacity = lerp(0.28, 0.06, e).toFixed(3);
 
   if (nodes.reelGlow) {
-    nodes.reelGlow.style.opacity = lerp(0, 0.5, e).toFixed(3);
-    nodes.reelGlow.style.transform = `scale(${lerp(1.1, 1.3, e).toFixed(3)})`;
-  }
-
-  /* The title dissolves as the film opens instead of sliding apart: the reel
-     carries its own on-screen type, and two sets of words fighting over the
-     same frame is noise. It swells very slightly on the way out. */
-  if (nodes.reelTitle) {
-    /* The stamp dissolves to hand the screen over to the footage. If the
-       footage failed to load there is nothing to hand it to, and dissolving
-       would leave a black rectangle — so it stays, and the screen still reads
-       as something rather than as a hole. <ReelStage/> sets the flag. */
-    const filmFailed = nodes.reelTitle.dataset.filmFailed === "1";
-    const out = filmFailed ? 0 : smoothstep(0.18, 0.6, p);
-    nodes.reelTitle.style.opacity = String(1 - out);
-    nodes.reelTitle.style.transform = `scale(${lerp(1, 1.14, out).toFixed(4)})`;
+    /* the lamp comes up with the case: barely lit in the card, full once the
+       room is the screen */
+    nodes.reelGlow.style.opacity = lerp(0.35, 1, e).toFixed(3);
   }
 
   // exactly one cue is legible at any moment

@@ -38,7 +38,18 @@ built for a job the variant's viewer never asks of it:
 | File | Size | Made with | Why |
 |---|---|---|---|
 | `hero-bg-mobile.mp4` | 1.6MB | `48 1280 1.6` | Below 900px the hero loops forward and is never scrubbed, so it needs no all-intra frames. Picked by `<source media="(max-width: 899px)">`. |
-| `showreel-glow.mp4` | 612KB | `48 320 0.12` | The glow behind the reel frame is blurred by 70px; a 720p decode there was thrown away. |
 
-The showreel itself has no phone cut: full-bleed on a portrait phone it is
-already upscaled ~3.5x, and a 480p cut read visibly soft for a 1.6MB saving.
+## glb-to-mesh.mjs
+
+Turns a `.glb` into what the mask scene loads: one quantised mesh buffer and
+WebP maps. It keeps the largest primitive and drops the rest of the scene, so
+a backdrop cube in the export never reaches the page.
+
+```bash
+node tools/glb-to-mesh.mjs ~/Desktop/Spidey/tal.glb public/model tal
+```
+
+`tal.glb` went from 10.5MB to 1.32MB of mesh and 183KB of maps: positions to
+int16 against the bounding box, normals to int8, uvs to uint16, and a 4096px
+PNG roughness map — 5.9MB of it — down to a 512px WebP, which is all a
+roughness term needs.

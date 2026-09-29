@@ -1,213 +1,69 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SHOWREEL_PLAYBACK_RATE, SHOWREEL_GLOW_SRC, SHOWREEL_SRC } from "@/lib/content";
 import { view } from "@/lib/state";
+import MaskScene from "./MaskScene";
 
 /**
- * Stage 3 — the reel opens up.
+ * Stage 3 — the case opens.
  *
- * A tall scroll well with a sticky frame: scrolling grows the media from a
- * small card to full bleed while "SHOWREEL" and "2026" part to the edges,
- * blended with `difference` so they invert over the footage — the same trick
- * that carries the hero.
+ * A tall scroll well with a sticky frame: scrolling grows the frame from a
+ * small card to full bleed. Inside it stands the mask, lit by one lamp and
+ * turning to follow the pointer (see MaskScene).
  *
- * Two deliberate departures from the usual version of this effect:
+ * **No scroll hijacking.** The common version of this effect calls
+ * `preventDefault()` on wheel and pins the page with `scrollTo(0, 0)` until
+ * the media is fully open. That fights Lenis, breaks keyboard and trackpad
+ * momentum, traps screen-reader users, and makes the browser's own scrollbar
+ * lie. Here the expansion is just a function of how far you have scrolled
+ * through a tall section — same picture, nothing stolen.
  *
- *   1. **No scroll hijacking.** The common implementation calls
- *      `preventDefault()` on wheel and pins the page with `scrollTo(0, 0)`
- *      until the media is fully open. That fights Lenis, breaks keyboard and
- *      trackpad momentum, traps screen-reader users, and makes the browser's
- *      own scrollbar lie. Here the expansion is just a function of how far you
- *      have scrolled through a tall section — same picture, nothing stolen.
- *   2. **Playback is independent of scroll.** The film runs muted at 1.25× on
- *      its own clock; scroll only changes the size of the window onto it.
- *
- * Expansion finishes at ~55% of the well, so the last stretch is spent looking
- * at the full-bleed reel before the cue points on.
+ * Expansion finishes at ~55% of the well, so the last stretch is spent with
+ * the mask full-bleed before the cue points on.
  */
 export default function ReelStage() {
-  const frame = useRef<HTMLDivElement>(null);
-  const main = useRef<HTMLVideoElement>(null);
-  const glow = useRef<HTMLVideoElement>(null);
-  const inView = useRef(false);
   const [reduced, setReduced] = useState(false);
 
-  useEffect(() => setReduced(view.reduced), []);
-
-  /*
-   * Fetch the film when the visitor is nearly here, not when the page opens.
-   *
-   * Both copies used to be `preload="auto"`, and the main one carried
-   * `autoPlay` on top of that, so five megabytes of a film that lives on the
-   * third screen began downloading 103ms in — competing for bandwidth with the
-   * hero, which is the thing actually on screen. `metadata` holds it back;
-   * this observer releases it a whole viewport early, so it is buffered long
-   * before anyone arrives and nobody ever waits for it.
-   */
   useEffect(() => {
-    const stage = document.querySelector('[data-stage="reel"]');
-    if (!stage) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        for (const v of [main.current, glow.current]) {
-          if (!v || v.preload === "auto") continue;
-          v.preload = "auto";
-          if (v.readyState === 0) v.load();
-        }
-        io.disconnect();
-      },
-      { rootMargin: "120% 0px 120% 0px", threshold: 0 },
-    );
-    io.observe(stage);
-    return () => io.disconnect();
-  }, []);
-
-  /*
-   * A film that will not load.
-   *
-   * Both copies point at the same file, so one failure is the failure. The
-   * frame would otherwise open onto black while the stamp faded out of it;
-   * the flag keeps the stamp, and the screen stays legible.
-   */
-  useEffect(() => {
-    const videos = [main.current, glow.current].filter(
-      (v): v is HTMLVideoElement => v !== null,
-    );
-    const onFail = () => {
-      const title = document.querySelector<HTMLElement>(
-        '[data-engine="reel-title"]',
-      );
-      if (title) title.dataset.filmFailed = "1";
-    };
-    // already-failed elements never fire the event again; the error persists
-    if (videos.some((v) => v.error)) onFail();
-    for (const v of videos) v.addEventListener("error", onFail);
-    return () => {
-      for (const v of videos) v.removeEventListener("error", onFail);
-    };
-  }, []);
-
-  /* playback: enter to play, leave to pause — never scroll-scrubbed */
-  useEffect(() => {
-    const stage = document.querySelector('[data-stage="reel"]');
-    if (!stage || reduced) return;
-
-    const sync = () => {
-      const play = inView.current && document.visibilityState === "visible";
-      for (const v of [main.current, glow.current]) {
-        if (!v) continue;
-        if (play) void v.play().catch(() => {});
-        else v.pause();
-      }
-    };
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        inView.current = entries.some((e) => e.isIntersecting);
-        sync();
-      },
-      { rootMargin: "-25% 0px -25% 0px", threshold: 0 },
-    );
-    io.observe(stage);
-    document.addEventListener("visibilitychange", sync);
-    return () => {
-      io.disconnect();
-      document.removeEventListener("visibilitychange", sync);
-    };
-  }, [reduced]);
-
-  /* browsers reset playbackRate on load, so re-assert it whenever it moves */
-  useEffect(() => {
-    const videos = [main.current, glow.current].filter(
-      (v): v is HTMLVideoElement => v !== null,
-    );
-    const cleanups = videos.map((v) => {
-      const apply = () => {
-        if (v.playbackRate !== SHOWREEL_PLAYBACK_RATE) {
-          v.playbackRate = SHOWREEL_PLAYBACK_RATE;
-        }
-      };
-      apply();
-      v.addEventListener("loadedmetadata", apply);
-      v.addEventListener("ratechange", apply);
-      return () => {
-        v.removeEventListener("loadedmetadata", apply);
-        v.removeEventListener("ratechange", apply);
-      };
-    });
+    setReduced(view.reduced);
+    /* the frame's size is written by the engine, which measures on this */
     window.dispatchEvent(new CustomEvent("minho:layout"));
-    return () => cleanups.forEach((c) => c());
   }, []);
 
   return (
     <section
       data-stage="reel"
       className="relative h-[300vh] w-full"
-      aria-label="Showreel 2024"
+      aria-label="Tal"
     >
-      <div className="sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden">
-        {/* blurred copy behind the frame — depth, not decoration */}
-        <div
-          data-engine="reel-glow"
-          className="engine-driven pointer-events-none absolute inset-0 opacity-0"
-          style={{ filter: "blur(70px) saturate(1.35)" }}
-          aria-hidden="true"
-        >
-          <video
-            ref={glow}
-            className="h-full w-full object-cover"
-            src={SHOWREEL_GLOW_SRC}
-            muted
-            loop
-            playsInline
-            preload="metadata"
-          />
-        </div>
+      <h2 className="sr-only">Tal — a mask that follows you</h2>
 
-        {/* the frame that grows */}
+      <div className="sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden">
+        {/* the case that grows */}
         <div
-          ref={frame}
           data-engine="reel-frame"
-          className="engine-driven relative overflow-hidden bg-black"
+          className="engine-driven relative overflow-hidden bg-[#050505]"
           style={{ width: "26vw", height: "40vh", borderRadius: "16px" }}
         >
-          <video
-            ref={main}
-            className="h-full w-full object-cover"
-            src={SHOWREEL_SRC}
-            muted
-            loop
-            playsInline
-            preload="metadata"
+          {/* The lamp's own spill inside the case: what a cone of light does
+              to the air of a dark room. A gradient rather than a second pass
+              over the scene — and inside the frame, so it is still there once
+              the frame is the whole screen. */}
+          <div
+            data-engine="reel-glow"
+            className="engine-driven pointer-events-none absolute inset-0 opacity-0"
+            style={{
+              background:
+                "radial-gradient(58% 46% at 50% 4%, rgba(255,214,170,0.22) 0%, rgba(255,146,72,0.07) 42%, transparent 74%)",
+            }}
             aria-hidden="true"
           />
+          <MaskScene className="absolute inset-0 h-full w-full" />
           <div
             data-engine="reel-veil"
             className="engine-driven pointer-events-none absolute inset-0 bg-black"
-            style={{ opacity: 0.4 }}
+            style={{ opacity: 0.28 }}
           />
-        </div>
-
-        {/* SHOWREEL 2026 — a heavy stamp that dissolves as the film opens.
-            No z-index anywhere on this chain, or the blend group would be
-            isolated and the type would stop inverting. */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-gutter">
-          <h2
-            data-engine="reel-title"
-            className="whitespace-nowrap text-center text-[clamp(2.2rem,7.5vw,6rem)] uppercase leading-none text-white"
-            style={{
-              mixBlendMode: "difference",
-              // a heavy grotesque, not the Didone used elsewhere: this reads as
-              // a stamp over the footage rather than a headline
-              fontFamily: "var(--font-ui)",
-              fontWeight: 900,
-              letterSpacing: "-0.035em",
-            }}
-          >
-            Showreel 2024
-          </h2>
         </div>
 
         {/* one cue at a time, so it always says what to do next */}
@@ -216,7 +72,7 @@ export default function ReelStage() {
             data-engine="reel-cue-a"
             className="engine-driven absolute whitespace-nowrap text-label text-ink md:text-muted"
           >
-            SCROLL TO EXPAND
+            {reduced ? "SCROLL TO OPEN" : "SCROLL TO EXPAND"}
           </span>
           <span
             data-engine="reel-cue-b"

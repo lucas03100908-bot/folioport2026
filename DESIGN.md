@@ -109,10 +109,10 @@ The house lights are down and the film is the lead. Everything else sets up the 
 
 The room is black (#000). The only colour that belongs to the site rather than to the footage is one ember orange, used for what is live now: the active tab, the progress line, the thing under the pointer. The space is generous and deliberately empty, because in a screening room empty space is what makes the screen glow. Motion runs at two speeds. Controls answer instantly, like a projectionist's switch. Scenes move slowly, like a dissolve.
 
-WebGL is allowed where it is the picture itself: the discipline tanks and the hero film. It is never there as decoration laid over the picture.
+WebGL is allowed where it is the picture itself: the discipline tanks, and the mask on the third screen. It is never there as decoration laid over the picture.
 
 **Key Characteristics:**
-- Black ground, footage and live water as the only large colour fields
+- Black ground; footage, live water and one lit object as the only large colour fields
 - Didone display in uppercase for titles; a neutral grotesque in spaced capitals for credits
 - One accent, reserved for live state
 - Two motion speeds: 200ms for UI, 900ms for scenes
@@ -193,6 +193,8 @@ The room is flat and dark, and depth comes from light, not from stacked shadows.
 - **Glass** (`0 24px 70px -34px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.085)` + `blur(18px) saturate(150%)`): panels over footage only.
 
 ### Named Rules
+**The One Lamp Rule.** A lit object is lit by one source. Depth comes from where that lamp is hung, not from a second light added to fix a dark side; a cool fill at a twentieth of the key is a floor, not a light.
+
 **The Glass-Over-Film Rule.** Backdrop blur exists to separate a panel from moving image under it. Over a still black ground it is decoration, so it is not allowed there.
 
 ## Shapes
@@ -214,6 +216,11 @@ Label type in House Light, 45px tall for touch. The active tab is Ember with a 1
 ### Frame card (liquid tank)
 A WebGL room of seawater in a 16px frame. The chooser card carries the discipline name alone, centred, in Display 2 white with a close shadow for the Didone hairlines. A project card credits its type top-left (Caption-size Label, white/75) and its number top-right (mono Caption), with the title in Display 3, a Small blurb and a Label CTA at the bottom.
 
+### The mask (signature)
+A carved mask, lit by one lamp and turning to follow the pointer, standing in the case that the third stage opens. One spotlight hangs above and slightly in front (a warm cone, inverse-square falloff, a cool fill at a twentieth of its strength, and a rim tied to the cone so nothing glows outside the light). Wood: roughness floored at 0.55, specular at 0.035. It turns at most 0.62 rad of yaw and 0.34 of pitch, eased toward the pointer over about a third of a second, with a slow sway underneath so it is never perfectly still — and, on a touch screen, so it still moves.
+
+The mesh is the quantised buffer `tools/glb-to-mesh.mjs` writes, drawn by `MaskScene` straight against WebGL2: one mesh, one light, one shader, no scene library. Nothing is fetched until the stage is a viewport away.
+
 ### Spec sheet (dotted rows)
 The key is in Exit Sign capitals, a dotted leader runs across, and the value is in Projection White, all in mono at Caption size (13px). Below 768px the key sits above its value and the leader is dropped. It is used in the contact card and the project detail.
 
@@ -234,7 +241,7 @@ Two speeds, three curves: UI answers fast and scenes breathe.
 - The scroll engine and WebGL own continuous motion, and they are integrated per frame rather than tweened. Any clock that the cursor can speed up is integrated, never computed as `time × speed`.
 - **Stage titles rise into frame** (`<Reveal>`): the line is clipped by its own box and lifts 105% over 900ms on the expo curve the first time it is 60% in view, and again when its text changes. Visible by default; only armed by script.
 - **Frames answer the pointer:** a lift of 6px on hover (420ms, expo), a press to scale 0.985.
-- One authored moment per stage. The project detail's entrance (media focus-pull, then the title rising word by word, then the details) is the only staggered sequence on the site.
+- One authored moment per stage: the detail panel's entrance, the case opening around the mask. The project detail's entrance (media focus-pull, then the title rising word by word, then the details) is the only staggered sequence on the site.
 - `prefers-reduced-motion`: CSS transitions collapse to instant, GSAP sets the end state, the tanks freeze on a still frame, and the connect field drops its blur.
 
 ## Do's and Don'ts
