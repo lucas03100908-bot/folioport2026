@@ -34,13 +34,11 @@ export type EngineNodes = {
 
   /* reel */
   reelFrame: HTMLElement | null;
-  reelGlow: HTMLElement | null;
   reelRoom: HTMLElement | null;
-  reelHorizon: HTMLElement | null;
-  reelPool: HTMLElement | null;
   reelSeat: HTMLElement | null;
+  reelStrip: HTMLElement | null;
+  reelHead: HTMLElement | null;
   reelPoster: HTMLElement | null;
-  reelVeil: HTMLElement | null;
   reelCueA: HTMLElement | null;
   reelCueB: HTMLElement | null;
 
@@ -62,13 +60,11 @@ export const EMPTY_NODES: EngineNodes = {
   railRules: [],
   railCounter: null,
   reelFrame: null,
-  reelGlow: null,
   reelRoom: null,
-  reelHorizon: null,
-  reelPool: null,
   reelSeat: null,
+  reelStrip: null,
+  reelHead: null,
   reelPoster: null,
-  reelVeil: null,
   reelCueA: null,
   reelCueB: null,
   connectWords: [],
@@ -100,13 +96,11 @@ export function collectNodes(): EngineNodes {
     railCounter: one('[data-engine="rail-counter"]'),
 
     reelFrame: one('[data-engine="reel-frame"]'),
-    reelGlow: one('[data-engine="reel-glow"]'),
     reelRoom: one('[data-engine="reel-room"]'),
-    reelHorizon: one('[data-engine="reel-horizon"]'),
-    reelPool: one('[data-engine="reel-pool"]'),
     reelSeat: one('[data-engine="reel-seat"]'),
+    reelStrip: one('[data-engine="reel-strip"]'),
+    reelHead: one('[data-engine="reel-head"]'),
     reelPoster: one('[data-engine="reel-poster"]'),
-    reelVeil: one('[data-engine="reel-veil"]'),
     reelCueA: one('[data-engine="reel-cue-a"]'),
     reelCueB: one('[data-engine="reel-cue-b"]'),
 

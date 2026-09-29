@@ -238,24 +238,28 @@ export function writeReel(c: FrameContext) {
   nodes.reelFrame.style.height = `${lerp(startH, 100, e).toFixed(2)}vh`;
   nodes.reelFrame.style.borderRadius = `${lerp(16, 0, e).toFixed(1)}px`;
 
-  if (nodes.reelVeil)
-    nodes.reelVeil.style.opacity = lerp(0.14, 0.02, e).toFixed(3);
 
-  /* the shader reads this to bring its own red rim up with the room */
+  /* the shader reads this to bring its own fill up with the sheet */
   nodes.reelFrame.dataset.open = e.toFixed(3);
 
-  /* The painted wall comes up first — the case opens onto a room, and only
-     then does the light in that room come on. */
+  /* This stage is a sheet of cream paper, and the chrome above it is built
+     for a black room: white labels on dark glass vanish against it. The
+     document carries a flag while the sheet holds the screen, and the chrome
+     inverts to ink on paper (see globals). */
+  const lit = e > 0.55 && p < 0.97;
+  const root = document.documentElement;
+  if (lit !== (root.dataset.lightStage === "1")) {
+    root.dataset.lightStage = lit ? "1" : "";
+  }
+
+  /* The paper comes up first, then the strip torn across it, then the
+     sheet's type. */
   if (nodes.reelRoom)
-    /* The painted wall is a whisper: the reference room is black, and
-       anything the lamp does not reach should read as nothing. */
-    nodes.reelRoom.style.opacity = (0.55 + 0.45 * smoothstep(0, 0.34, p)).toFixed(3);
-  if (nodes.reelHorizon)
-    nodes.reelHorizon.style.opacity = smoothstep(0.06, 0.5, p).toFixed(3);
+    nodes.reelRoom.style.opacity = smoothstep(0, 0.22, p).toFixed(3);
   if (nodes.reelSeat)
     nodes.reelSeat.style.opacity = smoothstep(0.05, 0.4, p).toFixed(3);
-  if (nodes.reelPool)
-    nodes.reelPool.style.opacity = smoothstep(0.05, 0.45, p).toFixed(3);
+  if (nodes.reelStrip)
+    nodes.reelStrip.style.opacity = smoothstep(0.2, 0.5, p).toFixed(3);
 
   /* The sheet is set last: the case opens, the room lights, then the type
      lands on it. */
@@ -264,13 +268,11 @@ export function writeReel(c: FrameContext) {
        the sheet reading over the screen behind it is worse than no sheet. */
     const t = smoothstep(0.5, 0.64, p) * (1 - smoothstep(0.86, 0.96, p));
     nodes.reelPoster.style.opacity = t.toFixed(3);
-    nodes.reelPoster.style.transform = `translate3d(0, ${((1 - t) * 26).toFixed(1)}px, 0)`;
-  }
-
-  if (nodes.reelGlow) {
-    /* the lamp comes up with the case: barely lit in the card, full once the
-       room is the screen */
-    nodes.reelGlow.style.opacity = lerp(0.35, 1, e).toFixed(3);
+    /* The headline lifts a little further than the rest of the sheet, so the
+       page sets rather than simply appears. */
+    nodes.reelPoster.style.transform = `translate3d(0, ${((1 - t) * 18).toFixed(1)}px, 0)`;
+    if (nodes.reelHead)
+      nodes.reelHead.style.transform = `translate3d(0, ${((1 - t) * 26).toFixed(1)}px, 0)`;
   }
 
   // exactly one cue is legible at any moment

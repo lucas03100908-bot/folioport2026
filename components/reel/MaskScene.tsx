@@ -63,9 +63,9 @@ uniform float u_ready;
 uniform float u_horizon;
 
 const vec3 LIGHT = vec3(1.0, 0.94, 0.86);
-const vec3 FILL = vec3(0.30, 0.42, 0.78);
-const float CONE_IN = 0.95;   // cos of the hot core
-const float CONE_OUT = 0.42;  // cos of the outer edge
+const vec3 FILL = vec3(0.92, 0.84, 0.70);  // the paper it stands on
+const float CONE_IN = 0.9;   // cos of the hot core
+const float CONE_OUT = 0.24;  // cos of the outer edge
 
 /* Tangent frame from screen-space derivatives. The export carries no
    TANGENT attribute, and deriving one per pixel costs less than shipping a
@@ -115,7 +115,7 @@ void main() {
   /* Spot: a cone that softens toward its edge, and inverse-square falloff so
      the top of the mask is hotter than the chin. */
   float cone = smoothstep(CONE_OUT, CONE_IN, dot(-l, u_lightDir));
-  float atten = cone * 42.0 / (dist * dist);
+  float atten = cone * 44.0 / (dist * dist);
 
   float ndl = max(dot(n, l), 0.0);
   float ndv = max(dot(n, v), 1e-4);
@@ -133,25 +133,22 @@ void main() {
      lifted a little where the surface faces up, so the piece sits in a space
      instead of on a card. */
   float sky = n.y * 0.5 + 0.5;
-  vec3 ambient = albedo * FILL * mix(0.03, 0.085, sky) * (0.3 + 0.7 * u_horizon);
+  vec3 ambient = albedo * FILL * mix(0.2, 0.42, sky) * (0.35 + 0.65 * u_horizon);
 
   /* The floor throws a little of the lamp back up: the underside of a hung
      piece is never black in a room with a lit floor under it. */
   float up = max(-n.y, 0.0);
-  vec3 bounce = albedo * vec3(1.0, 0.84, 0.70) * up * 0.1 * cone;
+  vec3 bounce = albedo * vec3(1.0, 0.9, 0.78) * up * 0.16;
 
   /* Rim: the cone grazing the silhouette. Tied to the light's own reach so it
      cannot glow where the lamp does not shine. */
   float rim = pow(1.0 - ndv, 3.6) * cone * 0.5;
   vec3 col = direct + ambient + bounce + LIGHT * rim * albedo;
 
-  /* The second source is the room's own: a red band burning on the horizon
-     behind the piece. It is behind, so the only thing it can do from here is
-     take the silhouette - hotter low on the mask, where the band sits, and
-     nothing at all where the surface faces the camera. */
-  float edge = pow(1.0 - ndv, 2.6);
-  float low = smoothstep(0.35, -0.45, v_world.y);
-  col += vec3(1.0, 0.16, 0.06) * edge * low * u_horizon * 0.5;
+  /* The sheet's own colour comes back at the piece from the sides: cool at
+     the silhouette, the violet edge the comp carries down its left. */
+  float edge = pow(1.0 - ndv, 2.4);
+  col += vec3(0.40, 0.32, 0.72) * edge * u_horizon * 0.1;
 
   /* Filmic shoulder, the same roll-off the water uses, then the sRGB the
      canvas is not doing for us. */
@@ -484,7 +481,7 @@ export default function MaskScene({ className = "" }: { className?: string }) {
          dark room, which is what the room is for. */
       /* A tall screen has no width to spare, so the piece stays large there;
          a wide one can afford the room around it. */
-      const framing = 1.28 + (aspect > 1 ? 1.15 : 0.35) * state.horizon;
+      const framing = 1.28 + (aspect > 1 ? 0.42 : 0.1) * state.horizon;
       const dist = (halfHeight * framing * fit) / Math.tan(fov / 2);
       const eye = [0, 0.02, dist];
 
@@ -496,7 +493,7 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       const shiftX = 0;
       /* Down, into the lower half of the sheet: the headline is the top of
          the page. */
-      const shiftY = (aspect > 1 ? -0.78 : -0.35) * state.horizon * halfHeight;
+      const shiftY = (aspect > 1 ? -0.12 : -0.06) * state.horizon * halfHeight;
       gl.uniformMatrix4fv(
         u.model,
         false,
