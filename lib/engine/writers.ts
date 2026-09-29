@@ -258,8 +258,6 @@ export function writeReel(c: FrameContext) {
     nodes.reelRoom.style.opacity = smoothstep(0, 0.22, p).toFixed(3);
   if (nodes.reelSeat)
     nodes.reelSeat.style.opacity = smoothstep(0.05, 0.4, p).toFixed(3);
-  if (nodes.reelStrip)
-    nodes.reelStrip.style.opacity = smoothstep(0.2, 0.5, p).toFixed(3);
 
   /* The sheet is set last: the case opens, the room lights, then the type
      lands on it. */

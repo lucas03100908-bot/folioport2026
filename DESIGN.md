@@ -142,7 +142,7 @@ A projection booth palette: black, three greys of house light, and one ember.
 
 **Display Font:** Fiona (Adobe Fonts kit `kuv1jiy`), with Didot, Bodoni 72, Georgia
 **Body/UI Font:** Helvetica Neue, with Pretendard for Hangul, then Inter and system-ui
-**Poster Font:** Bebas Neue (Adobe kit `qkm8hoa`), one weight, caps only. It sets the mask sheet's headline and nothing else on the site.
+**Sheet Fonts:** three faces, each from its own Adobe kit, and all three appear only on the mask sheet: **Bebas Neue** (`qkm8hoa`) for the headline, caps only; **Acumin Pro Condensed** Semibold (`ylh6avf`) for its columns of small print; **Viroqua** Bold (`gkw5bai`) for the serif the caption is signed in.
 **Mono Font:** ui-monospace / SF Mono. Numerals and data only.
 
 **Character:** A high-contrast Didone set in uppercase is the title card. A neutral grotesque in wide-tracked capitals is the credit roll. Together they read as cinema, not as a website.
@@ -218,9 +218,9 @@ Label type in House Light, 45px tall for touch. The active tab is Ember with a 1
 A WebGL room of seawater in a 16px frame. The chooser card carries the discipline name alone, centred, in Display 2 white with a close shadow for the Didone hairlines. A project card credits its type top-left (Caption-size Label, white/75) and its number top-right (mono Caption), with the title in Display 3, a Small blurb and a Label CTA at the bottom.
 
 ### The mask (signature)
-The third stage is a printed sheet, and the only screen on the site that is paper rather than a lit room: cream (#f1ece1), a fan of flat rays turning once every two minutes behind the piece, and a minhwa landscape torn into two fragments — pines, peaks, a waterfall, a wave field — pasted down the left and right edges with a moon over one and a sun over the other. A torn strip of the same paper runs across the foot of the sheet, in front of the piece, so the sheet reads as a sheet.
+The third stage is a printed sheet, and the only screen on the site that is paper rather than a lit room. Warm ivory (#f5f2e6) with its own grain, nothing behind the piece, and the colour carried entirely by the headline: two lines of Bebas Neue knocked out of the mask's own colour map, so the letters are cut from the same wood the mask is. Under them a justified paragraph runs the full measure, the piece stands through all of it, and two columns of small print are signed in the serif at the foot.
 
-On it: the headline across the top in one line of Bebas Neue, the carved mask centred and turning to follow the pointer, and at the foot two columns of small bold print with the printer's marks between them: a cross, a halftone disc, a starburst, a blob, and under them a checker field, a bar field and a solid slug. They are marks, not a code — nothing pretends to be scannable. The piece is lit as a studio lights an object, not as a room lights itself: a warm key above and to the left carves the form, a cool violet from the lower right opens the shadow without filling it, and a hard rim behind the left shoulder cuts it off the paper. Ambient stays small — a large one is what made it read flat.
+The piece is lit as a studio lights an object: a warm key above and to the left carves the form, a cool violet from the lower right opens the shadow without filling it, and a rim behind the left shoulder cuts it off the paper. Ambient stays small — a large one is what made it read flat — and a soft warm pool on the paper seats it.
 
 The mesh is the quantised buffer `tools/glb-to-mesh.mjs` writes, drawn by `MaskScene` straight against WebGL2: one mesh, one light, one shader, no scene library. Nothing is fetched until the stage is a viewport away.
 

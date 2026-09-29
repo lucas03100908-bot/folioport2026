@@ -58,10 +58,14 @@ export default function RootLayout({
        chrome with the wrong one. */
     <html lang="en" style={{ background: BASE_HEX }}>
       <body style={{ background: BASE_HEX }}>
-        {/* The mask sheet's headline: Bebas Neue, from its own Adobe kit.
-            A condensed poster face is in no system stack, and that sheet is
-            the one screen that needs one. */}
+        {/* The mask sheet's three faces, each from its own Adobe kit:
+            Bebas Neue for the headline, Acumin Pro Condensed for the columns
+            of small print, Viroqua for the serif the caption is signed in.
+            None of the three is in a system stack, and that sheet is the one
+            screen on the site that is a printed page. */}
         <link rel="stylesheet" href="https://use.typekit.net/qkm8hoa.css" />
+        <link rel="stylesheet" href="https://use.typekit.net/ylh6avf.css" />
+        <link rel="stylesheet" href="https://use.typekit.net/gkw5bai.css" />
         {TYPEKIT_ID && (
           <>
             <link
