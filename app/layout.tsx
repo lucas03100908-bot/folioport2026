@@ -58,6 +58,10 @@ export default function RootLayout({
        chrome with the wrong one. */
     <html lang="en" style={{ background: BASE_HEX }}>
       <body style={{ background: BASE_HEX }}>
+        {/* The mask sheet's headline: Bebas Neue, from its own Adobe kit.
+            A condensed poster face is in no system stack, and that sheet is
+            the one screen that needs one. */}
+        <link rel="stylesheet" href="https://use.typekit.net/qkm8hoa.css" />
         {TYPEKIT_ID && (
           <>
             <link

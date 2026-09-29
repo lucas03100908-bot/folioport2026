@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The site in one mark: the black room, the ember, and the M of the
+       wordmark set in the same high-contrast Didone the site titles use.
+       Every browser asks for this file; until now every browser got a 404. -->
+  <rect width="64" height="64" fill="#000000" />
+  <rect x="8" y="50" width="48" height="3" fill="#ff4d1c" />
+  <path
+    d="M10 44V20h6.6l9.1 15.4L34.8 20h6.6v24h-5V28.6l-7.7 12.9h-2.2L18.8 28.6V44z"
+    fill="#f2f2f2"
+  />
+  <path d="M46 20h5v24h-5z" fill="#f2f2f2" opacity="0.35" />
+</svg>

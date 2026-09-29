@@ -142,6 +142,7 @@ A projection booth palette: black, three greys of house light, and one ember.
 
 **Display Font:** Fiona (Adobe Fonts kit `kuv1jiy`), with Didot, Bodoni 72, Georgia
 **Body/UI Font:** Helvetica Neue, with Pretendard for Hangul, then Inter and system-ui
+**Poster Font:** Bebas Neue (Adobe kit `qkm8hoa`), one weight, caps only. It sets the mask sheet's headline and nothing else on the site.
 **Mono Font:** ui-monospace / SF Mono. Numerals and data only.
 
 **Character:** A high-contrast Didone set in uppercase is the title card. A neutral grotesque in wide-tracked capitals is the credit roll. Together they read as cinema, not as a website.
@@ -219,7 +220,7 @@ A WebGL room of seawater in a 16px frame. The chooser card carries the disciplin
 ### The mask (signature)
 The third stage is a printed sheet, and the only screen on the site that is paper rather than a lit room: cream (#f1ece1), a fan of flat rays turning once every two minutes behind the piece, and a minhwa landscape torn into two fragments — pines, peaks, a waterfall, a wave field — pasted down the left and right edges with a moon over one and a sun over the other. A torn strip of the same paper runs across the foot of the sheet, in front of the piece, so the sheet reads as a sheet.
 
-On it: the headline across the top in one heavy grotesque line, the carved mask centred and turning to follow the pointer, and at the foot two columns of small bold print with the printer's marks between them. The piece is lit by one lamp above it, with the paper's own warmth as the fill and a cool violet at the silhouette.
+On it: the headline across the top in one line of Bebas Neue, the carved mask centred and turning to follow the pointer, and at the foot two columns of small bold print with the printer's marks between them: a cross, a halftone disc, a starburst, a blob, and under them a checker field, a bar field and a solid slug. They are marks, not a code — nothing pretends to be scannable. The piece is lit as a studio lights an object, not as a room lights itself: a warm key above and to the left carves the form, a cool violet from the lower right opens the shadow without filling it, and a hard rim behind the left shoulder cuts it off the paper. Ambient stays small — a large one is what made it read flat.
 
 The mesh is the quantised buffer `tools/glb-to-mesh.mjs` writes, drawn by `MaskScene` straight against WebGL2: one mesh, one light, one shader, no scene library. Nothing is fetched until the stage is a viewport away.
 

@@ -24,6 +24,11 @@
   --font-ui: "Helvetica Neue", "Pretendard", "Inter", system-ui, -apple-system,
     "Apple SD Gothic Neo", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /* Poster — Bebas Neue (Adobe kit qkm8hoa), one weight, used only for the
+     mask sheet's headline. It is caps-only and condensed by design; the
+     fallbacks are the narrowest faces that ship on a machine. */
+  --font-poster: bebas-neue, "Haettenschweiler", "Arial Narrow", "Oswald",
+    "Helvetica Neue", sans-serif;
 
   /* ---- type roles (DESIGN.md → Typography). One size per job; the names
      say what the text is for, not how big it is. Tailwind reads the

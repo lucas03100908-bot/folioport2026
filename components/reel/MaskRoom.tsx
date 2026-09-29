@@ -40,8 +40,20 @@ function rays() {
   return out;
 }
 
-/** one pine: a red trunk, a few limbs, and a stack of dark canopies */
+/**
+ * One pine, drawn the way the painting draws them: a red trunk with the
+ * pale rings down it, limbs that fork, and canopies that are clusters of
+ * small dark dabs rather than a single blob.
+ */
 function Pine({ x, y, s, flip = false }: { x: number; y: number; s: number; flip?: boolean }) {
+  const canopies: [number, number, number][] = [
+    [-74, 226, 46],
+    [82, 138, 42],
+    [4, 66, 52],
+    [-48, 112, 36],
+    [62, 244, 33],
+    [-108, 150, 30],
+  ];
   return (
     <g transform={`translate(${x} ${y}) scale(${flip ? -s : s} ${s})`}>
       <path
@@ -50,18 +62,35 @@ function Pine({ x, y, s, flip = false }: { x: number; y: number; s: number; flip
         stroke="#241410"
         strokeWidth="4"
       />
+      {/* the rings the painting marks its trunks with */}
+      <g fill="none" stroke="#f0e7dc" strokeWidth="2.4">
+        {[150, 214, 278, 342, 406].map((ty) => (
+          <ellipse key={ty} cx="4" cy={ty} rx="5" ry="3.4" />
+        ))}
+      </g>
       <path d="M4 360 C -30 330 -52 292 -64 254" fill="none" stroke="#b8563a" strokeWidth="11" strokeLinecap="round" />
       <path d="M9 254 C 40 232 60 202 74 164" fill="none" stroke="#b8563a" strokeWidth="11" strokeLinecap="round" />
-      {[
-        [-72, 230, 48],
-        [80, 142, 44],
-        [4, 70, 55],
-        [-48, 115, 38],
-        [60, 247, 35],
-      ].map(([cx, cy, r], i) => (
+      <path d="M2 300 C -24 286 -44 256 -58 222" fill="none" stroke="#b8563a" strokeWidth="7" strokeLinecap="round" />
+      {canopies.map(([cx, cy, r], i) => (
         <g key={i}>
-          <circle cx={cx} cy={cy} r={r} fill="#1f5133" stroke="#10281a" strokeWidth="4" />
-          <circle cx={cx - r * 0.28} cy={cy - r * 0.22} r={r * 0.4} fill="#2f7145" />
+          <circle cx={cx} cy={cy} r={r} fill="#1b4b2f" stroke="#0c2114" strokeWidth="4" />
+          {/* the dabs of needle that give each canopy its texture */}
+          {Array.from({ length: 9 }, (_, k) => {
+            const a = (k / 9) * Math.PI * 2 + i;
+            const rr = r * (0.34 + 0.4 * ((k % 3) / 3));
+            /* Rounded, not because two decimals are enough to draw with, but
+               because Node and the browser print the tail of a float
+               differently and React reads that as a hydration mismatch. */
+            return (
+              <circle
+                key={k}
+                cx={(cx + Math.cos(a) * rr).toFixed(2)}
+                cy={(cy + Math.sin(a) * rr).toFixed(2)}
+                r={(r * 0.2).toFixed(2)}
+                fill="#2f7145"
+              />
+            );
+          })}
         </g>
       ))}
     </g>
@@ -84,19 +113,63 @@ function Fragment({ flip = false }: { flip?: boolean }) {
             d="M-20 648 Q50 566 120 626 Q190 546 250 636 Q310 566 380 646 Q450 586 540 656 L540 900 L-20 900 Z"
           />
         </g>
-        <g stroke="#123f6b" strokeWidth="2.5" fill="none" opacity="0.55">
-          <path d="M130 528 Q100 570 92 616 M130 528 Q160 570 170 616 M268 528 Q240 572 232 620 M268 528 Q296 572 306 620" />
+        {/* The contour lines that fill every peak in the painting: nested
+            chevrons running down each face, tightening toward the ridge. */}
+        <g stroke="#0e3b6b" strokeWidth="2.2" fill="none" opacity="0.65">
+          {[130, 268, 400].map((px) =>
+            Array.from({ length: 6 }, (_, k) => {
+              const drop = 18 + k * 20;
+              return (
+                <path
+                  key={`${px}-${k}`}
+                  d={`M${px - 34 - k * 9} ${560 + drop} Q${px} ${508 + drop} ${px + 34 + k * 9} ${560 + drop}`}
+                />
+              );
+            }),
+          )}
+        </g>
+        <g stroke="#10502f" strokeWidth="2.2" fill="none" opacity="0.6">
+          {[120, 250, 380].map((px) =>
+            Array.from({ length: 5 }, (_, k) => {
+              const drop = 16 + k * 20;
+              return (
+                <path
+                  key={`${px}-${k}`}
+                  d={`M${px - 30 - k * 8} ${664 + drop} Q${px} ${618 + drop} ${px + 30 + k * 8} ${664 + drop}`}
+                />
+              );
+            }),
+          )}
         </g>
         {/* the fall and its foam */}
         <path d="M196 548 L216 548 L220 700 L192 700 Z" fill="#f4f1e8" stroke="#14304f" strokeWidth="4" />
         <path d="M204 552 L209 552 L211 696 L202 696 Z" fill="#3d86c4" opacity="0.8" />
         <ellipse cx="206" cy="704" rx="34" ry="13" fill="#f4f1e8" stroke="#14304f" strokeWidth="3" />
-        {/* the wave field it all stands in */}
-        <rect x="-20" y="700" width="580" height="220" fill="#8d6a3f" />
-        <g stroke="#2a1a0e" strokeWidth="3.5" fill="none">
-          <path d="M-20 726 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0" />
-          <path d="M-54 768 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0" />
-          <path d="M-20 810 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0 q34 -24 68 0 q34 24 68 0" />
+        {/* The wave field: scallops in rows, each row offset, with the little
+            curls of foam the painting scatters between them. */}
+        <rect x="-20" y="700" width="580" height="240" fill="#8d6a3f" />
+        <g stroke="#2a1a0e" strokeWidth="3" fill="none">
+          {[714, 748, 782, 816, 850, 884].map((wy, row) => (
+            <path
+              key={wy}
+              d={`M${-40 - (row % 2) * 24} ${wy} ${"q28 -20 56 0 q28 20 56 0 ".repeat(6)}`}
+            />
+          ))}
+        </g>
+        <g fill="#f4f1e8" stroke="#2a1a0e" strokeWidth="2">
+          {[
+            [64, 742],
+            [246, 776],
+            [142, 826],
+            [356, 812],
+            [430, 866],
+            [26, 878],
+          ].map(([fx, fy]) => (
+            <path
+              key={`${fx}-${fy}`}
+              d={`M${fx} ${fy} q-9 -12 2 -18 q10 -6 15 4 q9 -7 14 3 q5 11 -7 14 z`}
+            />
+          ))}
         </g>
         <Pine x={104} y={286} s={0.86} />
         <Pine x={368} y={330} s={0.68} flip />
@@ -119,6 +192,10 @@ export default function MaskRoom() {
     <svg
       data-engine="reel-room"
       className="engine-driven pointer-events-none absolute inset-0 h-full w-full opacity-0"
+      /* The engine writes this element's opacity every frame, from outside
+         React — including in the window between the server's HTML and
+         hydration, which React would otherwise report as a mismatch. */
+      suppressHydrationWarning
       viewBox="0 0 1600 940"
       preserveAspectRatio="xMidYMax slice"
       aria-hidden="true"
@@ -128,6 +205,11 @@ export default function MaskRoom() {
         <clipPath id="tal-tear">
           <path d="M-40 150 L468 150 Q486 238 460 318 Q500 398 468 470 Q506 556 464 638 Q498 718 462 940 L-40 940 Z" />
         </clipPath>
+        {/* the tooth of the paper everything is printed on */}
+        <filter id="tal-grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="7" />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
         <radialGradient id="tal-moon-ball" cx="0.36" cy="0.32">
           <stop offset="0%" stopColor="#f7f5ef" />
           <stop offset="62%" stopColor="#d7d3ca" />
@@ -153,6 +235,15 @@ export default function MaskRoom() {
       {/* a ball each, lit from the upper left, as the comp has them */}
       <circle cx="322" cy="322" r="60" fill="url(#tal-moon-ball)" />
       <circle cx="1288" cy="276" r="64" fill="url(#tal-sun-ball)" />
+
+      {/* the grain, over everything: it is one sheet, printed once */}
+      <rect
+        width="1600"
+        height="940"
+        filter="url(#tal-grain)"
+        opacity="0.16"
+        style={{ mixBlendMode: "multiply" }}
+      />
     </svg>
   );
 }

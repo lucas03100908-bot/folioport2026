@@ -105,7 +105,7 @@ void main() {
   /* glTF packs roughness in green and metalness in blue. The mask is wood
      and its metal channel is empty, so only roughness is read; the floor
      keeps the highlight from collapsing to a sparkle at grazing angles. */
-  float rough = clamp(texture(u_rough, v_uv).g, 0.55, 1.0);
+  float rough = clamp(texture(u_rough, v_uv).g, 0.34, 0.95);
   float a = rough * rough;
 
   vec3 toLight = u_lightPos - v_world;
@@ -123,32 +123,41 @@ void main() {
   float ndh = max(dot(n, h), 0.0);
   float vdh = max(dot(v, h), 0.0);
 
-  vec3 f0 = vec3(0.035);
+  vec3 f0 = vec3(0.06);  // lacquered wood, not raw
   vec3 fres = f0 + (1.0 - f0) * pow(1.0 - vdh, 5.0);
   vec3 spec = fres * ggx(ndh, a) * smithG(ndv, ndl, a) / (4.0 * ndv * max(ndl, 1e-4));
 
   vec3 direct = (albedo / 3.14159265 + spec) * LIGHT * ndl * atten;
 
-  /* Fill from the room itself: a fifth of a lambert against a cool ambient,
-     lifted a little where the surface faces up, so the piece sits in a space
-     instead of on a card. */
+  /* --- the other two lamps -------------------------------------------- */
+  /* A studio, not a room: the key above and to the left carves the form, a
+     cool violet from the lower right opens the shadow without filling it,
+     and a hard rim behind the left shoulder cuts the piece off the paper.
+     One lamp lit the mask evenly and flat; three give it a side to be dark
+     on, which is what the comp has. */
+
+  /* Violet fill, deliberately dim and deliberately cold: it is the colour of
+     the shadow in the comp, and it only ever reaches what the key misses. */
+  vec3 fillDir = normalize(vec3(0.85, -0.35, 0.55));
+  float fillN = max(dot(n, fillDir), 0.0);
+  vec3 fillLight = albedo * vec3(0.42, 0.34, 0.78) * fillN * 0.5;
+
+  /* Rim from behind the left shoulder, on the silhouette only. */
+  vec3 rimDir = normalize(vec3(-0.75, 0.42, -0.6));
+  float rimN = pow(max(dot(n, rimDir), 0.0), 1.6) * pow(1.0 - ndv, 1.8);
+  vec3 rimLight = vec3(1.0, 0.92, 0.84) * rimN * 1.5;
+
+  /* Ambient is the paper's own bounce, and it stays small: a large ambient is
+     exactly what made this read flat. */
   float sky = n.y * 0.5 + 0.5;
-  vec3 ambient = albedo * FILL * mix(0.2, 0.42, sky) * (0.35 + 0.65 * u_horizon);
+  vec3 ambient = albedo * FILL * mix(0.05, 0.14, sky) * (0.35 + 0.65 * u_horizon);
 
-  /* The floor throws a little of the lamp back up: the underside of a hung
-     piece is never black in a room with a lit floor under it. */
+  /* The sheet under it throws a little warmth back up. */
   float up = max(-n.y, 0.0);
-  vec3 bounce = albedo * vec3(1.0, 0.9, 0.78) * up * 0.16;
+  vec3 bounce = albedo * vec3(1.0, 0.9, 0.78) * up * 0.1;
 
-  /* Rim: the cone grazing the silhouette. Tied to the light's own reach so it
-     cannot glow where the lamp does not shine. */
-  float rim = pow(1.0 - ndv, 3.6) * cone * 0.5;
-  vec3 col = direct + ambient + bounce + LIGHT * rim * albedo;
-
-  /* The sheet's own colour comes back at the piece from the sides: cool at
-     the silhouette, the violet edge the comp carries down its left. */
-  float edge = pow(1.0 - ndv, 2.4);
-  col += vec3(0.40, 0.32, 0.72) * edge * u_horizon * 0.1;
+  float rim = pow(1.0 - ndv, 3.6) * cone * 0.4;
+  vec3 col = direct + ambient + bounce + fillLight + rimLight + LIGHT * rim * albedo;
 
   /* Filmic shoulder, the same roll-off the water uses, then the sRGB the
      canvas is not doing for us. */

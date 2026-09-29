@@ -43,6 +43,12 @@ export default function ReelStage() {
         {/* the case that grows */}
         <div
           data-engine="reel-frame"
+          /* The engine writes this element's size and its `data-open` (which
+             the shader reads) from outside React, and it starts writing
+             before hydration finishes. The attribute is rendered here so the
+             server's HTML carries it too. */
+          data-open="0"
+          suppressHydrationWarning
           className="engine-driven relative overflow-hidden bg-[#f1ece1]"
           style={{ width: "26vw", height: "40vh", borderRadius: "16px" }}
         >
@@ -95,11 +101,32 @@ export default function ReelStage() {
             data-engine="reel-poster"
             className="engine-driven pointer-events-none absolute inset-0 opacity-0"
           >
+            {/* the inks the marks below are printed with */}
+            <svg width="0" height="0" aria-hidden className="absolute">
+              <defs>
+                <pattern id="tal-halftone" width="3" height="3" patternUnits="userSpaceOnUse">
+                  <circle cx="1.5" cy="1.5" r="1.05" fill="#141210" />
+                </pattern>
+                <pattern id="tal-grid" width="6" height="6" patternUnits="userSpaceOnUse">
+                  <rect width="6" height="6" fill="#f1ece1" />
+                  <rect width="3" height="3" fill="#141210" />
+                  <rect x="3" y="3" width="3" height="3" fill="#141210" />
+                </pattern>
+                <pattern id="tal-bars" width="6" height="18" patternUnits="userSpaceOnUse">
+                  <rect width="6" height="18" fill="#f1ece1" />
+                  <rect width="2" height="18" fill="#141210" />
+                  <rect x="3.5" width="1" height="18" fill="#141210" />
+                </pattern>
+              </defs>
+            </svg>
             <div className="absolute inset-x-0 top-0 px-gutter pt-[calc(var(--nav-h)+0.5rem)]">
               <p
                 data-engine="reel-head"
-                className="engine-driven whitespace-nowrap text-center text-[clamp(2.4rem,9.2vw,8.5rem)] font-black uppercase leading-[0.86] text-[#141210]"
-                style={{ fontFamily: "var(--font-ui)", letterSpacing: "-0.045em" }}
+                /* Bebas is condensed, so the same line takes a third less
+                   width than a Helvetica Black would: it is set larger, and
+                   opened up a hair, because caps this tall crowd. */
+                className="engine-driven whitespace-nowrap text-center text-[clamp(3rem,12.8vw,12rem)] uppercase leading-[0.86] text-[#141210]"
+                style={{ fontFamily: "var(--font-poster)", letterSpacing: "0.005em" }}
               >
                 Bangsangsi Mask
               </p>
@@ -113,24 +140,38 @@ export default function ReelStage() {
                   the lotus on its nose are carved, not painted on.
                 </p>
 
-                {/* the printer's marks the comp sets between its columns */}
-                <div className="flex items-center justify-center gap-4 text-[#141210]">
-                  <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
-                    <path d="M11 0v22M0 11h22" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                  <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
-                    <circle cx="11" cy="11" r="10" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                    <circle cx="11" cy="11" r="5" fill="currentColor" />
-                  </svg>
-                  <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
-                    <path
-                      d="M11 0l2.6 6.4L20 4l-3.2 6.1L22 13l-6.8.4L16 20l-5-4.4L6 20l.8-6.6L0 13l5.2-2.9L2 4l6.4 2.4z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
-                    <path d="M4 22C4 10 10 0 22 0v10C12 10 12 16 12 22z" fill="currentColor" />
-                  </svg>
+                {/* The printer's marks, and under them the ink blocks the
+                    comp prints between its columns: a halftone field and two
+                    solid slugs. They are marks, not a code — nothing here
+                    pretends to be scannable. */}
+                <div className="flex flex-col items-center gap-2.5 text-[#141210]">
+                  <div className="flex items-center gap-3.5">
+                    <svg width="24" height="24" viewBox="0 0 22 22" aria-hidden>
+                      <path d="M11 0v22M0 11h22" stroke="currentColor" strokeWidth="2.4" />
+                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 22 22" aria-hidden>
+                      <circle cx="11" cy="11" r="10.4" fill="url(#tal-halftone)" />
+                      <circle cx="11" cy="11" r="10.4" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 22 22" aria-hidden>
+                      <path
+                        d="M11 0l2.6 6.4L20 4l-3.2 6.1L22 13l-6.8.4L16 20l-5-4.4L6 20l.8-6.6L0 13l5.2-2.9L2 4l6.4 2.4z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 22 22" aria-hidden>
+                      <path d="M4 22C4 10 10 0 22 0v10C12 10 12 16 12 22z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg width="46" height="18" viewBox="0 0 46 18" aria-hidden>
+                      <rect width="46" height="18" fill="url(#tal-grid)" />
+                    </svg>
+                    <svg width="34" height="18" viewBox="0 0 34 18" aria-hidden>
+                      <rect width="34" height="18" fill="url(#tal-bars)" />
+                    </svg>
+                    <span className="h-[18px] w-[26px] bg-[#141210]" />
+                  </div>
                 </div>
 
                 <p className="text-justify text-[0.8125rem] font-semibold leading-[1.5] text-[#1a1714]">
