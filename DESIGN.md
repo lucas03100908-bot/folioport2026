@@ -193,7 +193,7 @@ The room is flat and dark, and depth comes from light, not from stacked shadows.
 - **Glass** (`0 24px 70px -34px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.085)` + `blur(18px) saturate(150%)`): panels over footage only.
 
 ### Named Rules
-**The One Lamp Rule.** A lit object is lit by one source. Depth comes from where that lamp is hung, not from a second light added to fix a dark side; a cool fill at a twentieth of the key is a floor, not a light.
+**The One Lamp Rule.** A lit object is lit by one lamp; a second source may only be the room itself (the horizon band), and only from behind. Depth comes from where that lamp is hung, not from a second light added to fix a dark side; a cool fill at a twentieth of the key is a floor, not a light.
 
 **The Glass-Over-Film Rule.** Backdrop blur exists to separate a panel from moving image under it. Over a still black ground it is decoration, so it is not allowed there.
 
@@ -217,7 +217,7 @@ Label type in House Light, 45px tall for touch. The active tab is Ember with a 1
 A WebGL room of seawater in a 16px frame. The chooser card carries the discipline name alone, centred, in Display 2 white with a close shadow for the Didone hairlines. A project card credits its type top-left (Caption-size Label, white/75) and its number top-right (mono Caption), with the title in Display 3, a Small blurb and a Label CTA at the bottom.
 
 ### The mask (signature)
-A carved mask, lit by one lamp and turning to follow the pointer, standing in the case that the third stage opens. One spotlight hangs above and slightly in front (a warm cone, inverse-square falloff, a cool fill at a twentieth of its strength, and a rim tied to the cone so nothing glows outside the light). Wood: roughness floored at 0.55, specular at 0.035. It turns at most 0.62 rad of yaw and 0.34 of pitch, eased toward the pointer over about a third of a second, with a slow sway underneath so it is never perfectly still — and, on a touch screen, so it still moves.
+A carved mask, lit by one lamp and turning to follow the pointer, standing in the case that the third stage opens. The case is the site's one **neo-brutalist** surface: the room behind the piece is a red band burning on the horizon, and over it the stage sets a poster — one heavy grotesque word at up to 15rem with the Korean beside it in Ember, hard-edged chips (an Ember block and a 2px white outline), a justified paragraph of small print, a 2px rule and a monospace data row. Nothing is rounded, nothing is soft, and the type is struck before the stage scrolls away. One spotlight hangs above and slightly in front (a warm cone, inverse-square falloff, a cool fill at a twentieth of its strength, and a rim tied to the cone so nothing glows outside the light). The room's own red horizon is the only other source: it sits behind the piece, so all it can do is take the silhouette — hot low on the mask where the band is, nothing where the surface faces the camera. It comes up with the case. Wood: roughness floored at 0.55, specular at 0.035. It turns at most 0.62 rad of yaw and 0.34 of pitch, eased toward the pointer over about a third of a second, with a slow sway underneath so it is never perfectly still — and, on a touch screen, so it still moves.
 
 The mesh is the quantised buffer `tools/glb-to-mesh.mjs` writes, drawn by `MaskScene` straight against WebGL2: one mesh, one light, one shader, no scene library. Nothing is fetched until the stage is a viewport away.
 
@@ -254,6 +254,7 @@ Two speeds, three curves: UI answers fast and scenes breathe.
 - **Do** keep a header row's height when its content changes between states.
 - **Do** give every section a real heading (visible or `sr-only`), so a screen reader can jump between stages.
 - **Do** mark decorative video `aria-hidden`.
+- **Do** load glTF maps unflipped (`imageOrientation: "none"`). glTF's uv origin is the image's top-left; flipping the bitmap and using the uvs as they come samples every island from the wrong row, which reads as colour noise rather than as an upside-down texture.
 
 ### Don't:
 - **Don't** put a small caps label above a heading. Credits go beside or below.

@@ -60,6 +60,7 @@ uniform vec3 u_eye;
 uniform vec3 u_lightPos;
 uniform vec3 u_lightDir;
 uniform float u_ready;
+uniform float u_horizon;
 
 const vec3 LIGHT = vec3(1.0, 0.94, 0.86);
 const vec3 FILL = vec3(0.32, 0.38, 0.52);
@@ -139,6 +140,14 @@ void main() {
   float rim = pow(1.0 - ndv, 3.6) * cone * 0.5;
   vec3 col = direct + ambient + LIGHT * rim * albedo;
 
+  /* The second source is the room's own: a red band burning on the horizon
+     behind the piece. It is behind, so the only thing it can do from here is
+     take the silhouette - hotter low on the mask, where the band sits, and
+     nothing at all where the surface faces the camera. */
+  float edge = pow(1.0 - ndv, 2.6);
+  float low = smoothstep(0.55, -0.35, v_world.y);
+  col += vec3(1.0, 0.16, 0.06) * edge * low * u_horizon * 1.35;
+
   /* Filmic shoulder, the same roll-off the water uses, then the sRGB the
      canvas is not doing for us. */
   col = col / (col + vec3(0.62)) * 1.28;
@@ -209,15 +218,15 @@ const norm = (a: number[]) => {
   const l = Math.hypot(a[0], a[1], a[2]) || 1;
   return [a[0] / l, a[1] / l, a[2] / l];
 };
-/** yaw about Y, then pitch about X, then a uniform scale */
-const modelMatrix = (yaw: number, pitch: number, s: number) => {
+/** yaw about Y, then pitch about X, a uniform scale, then a sideways shift */
+const modelMatrix = (yaw: number, pitch: number, s: number, shiftX = 0) => {
   const cy = Math.cos(yaw), sy = Math.sin(yaw);
   const cp = Math.cos(pitch), sp = Math.sin(pitch);
   return new Float32Array([
     cy * s, 0, -sy * s, 0,
     sy * sp * s, cp * s, cy * sp * s, 0,
     sy * cp * s, -sp * s, cy * cp * s, 0,
-    0, 0, 0, 1,
+    shiftX, 0, 0, 1,
   ]);
 };
 /** the rotation part again, for normals (uniform scale, so no inverse needed) */
@@ -251,6 +260,7 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       targetYaw: 0,
       targetPitch: 0,
       ready: 0,
+      horizon: 0,
       idle: Math.random() * 6.28,
       visible: false,
     };
@@ -284,6 +294,7 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       lightPos: gl.getUniformLocation(program, "u_lightPos"),
       lightDir: gl.getUniformLocation(program, "u_lightDir"),
       ready: gl.getUniformLocation(program, "u_ready"),
+      horizon: gl.getUniformLocation(program, "u_horizon"),
       color: gl.getUniformLocation(program, "u_color"),
       normalMap: gl.getUniformLocation(program, "u_normalMap"),
       rough: gl.getUniformLocation(program, "u_rough"),
@@ -329,7 +340,7 @@ export default function MaskScene({ className = "" }: { className?: string }) {
         try {
           await whenNear();
           const res = await fetch(url);
-          const bitmap = await createImageBitmap(await res.blob(), { imageOrientation: "flipY" });
+          const bitmap = await createImageBitmap(await res.blob(), { imageOrientation: "none" });
           if (disposed) return;
           gl.activeTexture(gl.TEXTURE0 + slot);
           gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -454,6 +465,10 @@ export default function MaskScene({ className = "" }: { className?: string }) {
         state.pitch += (state.targetPitch + nod - state.pitch) * k;
       }
       state.ready = Math.min(1, state.ready + dt * 1.4);
+      /* written by the scroll engine on the frame: 0 in the card, 1 once the
+         case is the screen */
+      const open = Number(canvas.parentElement?.dataset.open ?? 0);
+      state.horizon += (open - state.horizon) * Math.min(1, dt * 3);
 
       /* The mask is framed by height, so a wide frame gives it air at the
          sides rather than cropping its chin. */
@@ -465,7 +480,11 @@ export default function MaskScene({ className = "" }: { className?: string }) {
 
       gl.uniformMatrix4fv(u.proj, false, perspective(fov, aspect, dist * 0.2, dist * 3));
       gl.uniformMatrix4fv(u.view, false, lookAt(eye, [0, 0, 0]));
-      gl.uniformMatrix4fv(u.model, false, modelMatrix(state.yaw, state.pitch, 1));
+      /* On a wide screen the piece stands right of centre, which is what
+         leaves the lower left of the frame to the type. It only moves once
+         there is width to move in: on a phone it stays in the middle. */
+      const shiftX = aspect > 1.25 ? 0.42 * state.horizon : 0;
+      gl.uniformMatrix4fv(u.model, false, modelMatrix(state.yaw, state.pitch, 1, shiftX));
       gl.uniformMatrix3fv(u.normal, false, normalMatrix(state.yaw, state.pitch));
       gl.uniform3f(u.eye, eye[0], eye[1], eye[2]);
 
@@ -476,6 +495,9 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       const ld = norm([-lp[0], -lp[1], -lp[2]]);
       gl.uniform3f(u.lightDir, ld[0], ld[1], ld[2]);
       gl.uniform1f(u.ready, state.ready);
+      /* The band comes up as the case opens: a closed case is a lit object on
+         a shelf, an open one is the room it was taken out into. */
+      gl.uniform1f(u.horizon, state.horizon);
 
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, 0);

@@ -241,6 +241,24 @@ export function writeReel(c: FrameContext) {
   if (nodes.reelVeil)
     nodes.reelVeil.style.opacity = lerp(0.28, 0.06, e).toFixed(3);
 
+  /* the shader reads this to bring its own red rim up with the room */
+  nodes.reelFrame.dataset.open = e.toFixed(3);
+
+  if (nodes.reelHorizon)
+    nodes.reelHorizon.style.opacity = smoothstep(0.06, 0.5, p).toFixed(3);
+  if (nodes.reelPool)
+    nodes.reelPool.style.opacity = smoothstep(0.1, 0.6, p).toFixed(3);
+
+  /* The sheet is set last: the case opens, the room lights, then the type
+     lands on it. */
+  if (nodes.reelPoster) {
+    /* Set once the case is open, and struck before the stage scrolls away —
+       the sheet reading over the screen behind it is worse than no sheet. */
+    const t = smoothstep(0.5, 0.64, p) * (1 - smoothstep(0.86, 0.96, p));
+    nodes.reelPoster.style.opacity = t.toFixed(3);
+    nodes.reelPoster.style.transform = `translate3d(0, ${((1 - t) * 26).toFixed(1)}px, 0)`;
+  }
+
   if (nodes.reelGlow) {
     /* the lamp comes up with the case: barely lit in the card, full once the
        room is the screen */
