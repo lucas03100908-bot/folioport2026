@@ -490,7 +490,7 @@ export default function MaskScene({ className = "" }: { className?: string }) {
          dark room, which is what the room is for. */
       /* A tall screen has no width to spare, so the piece stays large there;
          a wide one can afford the room around it. */
-      const framing = 1.28 + (aspect > 1 ? 0.42 : 0.1) * state.horizon;
+      const framing = 1.28 + (aspect > 1 ? 0.78 : 0.2) * state.horizon;
       const dist = (halfHeight * framing * fit) / Math.tan(fov / 2);
       const eye = [0, 0.02, dist];
 
@@ -502,7 +502,7 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       const shiftX = 0;
       /* Down, into the lower half of the sheet: the headline is the top of
          the page. */
-      const shiftY = (aspect > 1 ? -0.12 : -0.06) * state.horizon * halfHeight;
+      const shiftY = (aspect > 1 ? 0.06 : 0.0) * state.horizon * halfHeight;
       gl.uniformMatrix4fv(
         u.model,
         false,

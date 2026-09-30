@@ -24,18 +24,15 @@
   --font-ui: "Helvetica Neue", "Pretendard", "Inter", system-ui, -apple-system,
     "Apple SD Gothic Neo", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
-  /* The mask sheet's three faces. They belong to that one screen, which is a
-     printed page: nothing else on the site sets type in them.
-       poster      Bebas Neue (kit qkm8hoa) — the headline. Caps only.
-       poster-text Acumin Pro Condensed 600 (kit ylh6avf) — the small print
-                   under it, dense and bold, the way the sheet prints it.
-       poster-mark Viroqua 700 (kit gkw5bai) — the wordmark, a bold serif
-                   against all that condensed grotesque. */
+  /* The mask sheet's three faces. Poster sets the headline (caps only,
+     condensed by design), condensed sets its columns of small print, and
+     the serif signs the caption. They appear on that one screen. */
   --font-poster: bebas-neue, "Haettenschweiler", "Arial Narrow", "Oswald",
     "Helvetica Neue", sans-serif;
-  --font-poster-text: acumin-pro-condensed, "Arial Narrow", "Helvetica Neue",
+  --font-cond: acumin-pro-condensed, "Arial Narrow", "Helvetica Neue",
     sans-serif;
-  --font-poster-mark: viroqua, "Bookman Old Style", Georgia, serif;
+  --font-serif-display: viroqua, "Bodoni 72", Georgia, "Times New Roman",
+    serif;
 
   /* ---- type roles (DESIGN.md → Typography). One size per job; the names
      say what the text is for, not how big it is. Tailwind reads the
@@ -300,6 +297,15 @@ header span {
     color var(--dur-scene) var(--ease-dissolve),
     background-color var(--dur-scene) var(--ease-dissolve),
     border-color var(--dur-scene) var(--ease-dissolve);
+}
+
+/* the mask sheet's headline sits a little further below the nav on a phone,
+   where the nav band is proportionally taller; the small print reads the
+   same variable, so the two never drift apart */
+@media (max-width: 767px) {
+  [data-engine="reel-frame"] {
+    --head-top: calc(var(--nav-h) + 0.9rem) !important;
+  }
 }
 
 /* --------------------------------------------------------------- rays --- */

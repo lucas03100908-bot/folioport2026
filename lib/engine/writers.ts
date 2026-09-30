@@ -258,8 +258,6 @@ export function writeReel(c: FrameContext) {
     nodes.reelRoom.style.opacity = smoothstep(0, 0.22, p).toFixed(3);
   if (nodes.reelSeat)
     nodes.reelSeat.style.opacity = smoothstep(0.05, 0.4, p).toFixed(3);
-  if (nodes.reelStrip)
-    nodes.reelStrip.style.opacity = smoothstep(0.18, 0.46, p).toFixed(3);
 
   /* The sheet is set last: the case opens, the room lights, then the type
      lands on it. */
@@ -271,6 +269,7 @@ export function writeReel(c: FrameContext) {
     /* The headline lifts a little further than the rest of the sheet, so the
        page sets rather than simply appears. */
     nodes.reelPoster.style.transform = `translate3d(0, ${((1 - t) * 18).toFixed(1)}px, 0)`;
+    if (nodes.reelHeadLayer) nodes.reelHeadLayer.style.opacity = t.toFixed(3);
     if (nodes.reelHead)
       nodes.reelHead.style.transform = `translate3d(0, ${((1 - t) * 26).toFixed(1)}px, 0)`;
   }
