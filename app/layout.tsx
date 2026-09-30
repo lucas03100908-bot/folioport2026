@@ -58,11 +58,11 @@ export default function RootLayout({
        chrome with the wrong one. */
     <html lang="en" style={{ background: BASE_HEX }}>
       <body style={{ background: BASE_HEX }}>
-        {/* The mask sheet's three faces, each from its own Adobe kit:
-            Bebas Neue for the headline, Acumin Pro Condensed for the columns
-            of small print, Viroqua for the serif the caption is signed in.
-            None of the three is in a system stack, and that sheet is the one
-            screen on the site that is a printed page. */}
+        {/* The mask sheet's three faces, each from its own Adobe kit: Bebas
+            Neue for the headline, Acumin Pro Condensed for the small print
+            it is set over, and Viroqua for the wordmark. None of the three
+            is in any system stack, and that sheet is a printed page rather
+            than an interface. */}
         <link rel="stylesheet" href="https://use.typekit.net/qkm8hoa.css" />
         <link rel="stylesheet" href="https://use.typekit.net/ylh6avf.css" />
         <link rel="stylesheet" href="https://use.typekit.net/gkw5bai.css" />
