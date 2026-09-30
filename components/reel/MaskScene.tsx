@@ -230,19 +230,33 @@ const norm = (a: number[]) => {
   return [a[0] / l, a[1] / l, a[2] / l];
 };
 /** yaw about Y, then pitch about X, a uniform scale, then a shift */
-const modelMatrix = (yaw: number, pitch: number, s: number, shiftX = 0, shiftY = 0) => {
+const modelMatrix = (
+  yaw: number,
+  pitch: number,
+  s: number,
+  shiftX = 0,
+  shiftY = 0,
+  roll = 0,
+) => {
   const cy = Math.cos(yaw), sy = Math.sin(yaw);
   const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const cr = Math.cos(roll), sr = Math.sin(roll);
+  /* yaw about Y, then pitch about X, then roll about Z — the last one is the
+     head cocking, so it happens in the piece's own frame and reads as a
+     tilt of the face rather than of the room. */
+  const m00 = cy, m01 = 0, m02 = -sy;
+  const m10 = sy * sp, m11 = cp, m12 = cy * sp;
+  const m20 = sy * cp, m21 = -sp, m22 = cy * cp;
   return new Float32Array([
-    cy * s, 0, -sy * s, 0,
-    sy * sp * s, cp * s, cy * sp * s, 0,
-    sy * cp * s, -sp * s, cy * cp * s, 0,
+    (m00 * cr + m10 * sr) * s, (m01 * cr + m11 * sr) * s, (m02 * cr + m12 * sr) * s, 0,
+    (m10 * cr - m00 * sr) * s, (m11 * cr - m01 * sr) * s, (m12 * cr - m02 * sr) * s, 0,
+    m20 * s, m21 * s, m22 * s, 0,
     shiftX, shiftY, 0, 1,
   ]);
 };
 /** the rotation part again, for normals (uniform scale, so no inverse needed) */
-const normalMatrix = (yaw: number, pitch: number) => {
-  const m = modelMatrix(yaw, pitch, 1);
+const normalMatrix = (yaw: number, pitch: number, roll = 0) => {
+  const m = modelMatrix(yaw, pitch, 1, 0, 0, roll);
   return new Float32Array([m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]]);
 };
 
@@ -280,6 +294,8 @@ export default function MaskScene({
     const state = {
       yaw: 0,
       pitch: 0,
+      roll: 0,
+      rollVel: 0,
       targetYaw: 0,
       targetPitch: 0,
       ready: 0,
@@ -436,9 +452,20 @@ export default function MaskScene({
       const x = (e.clientX / window.innerWidth) * 2 - 1;
       const y = (e.clientY / window.innerHeight) * 2 - 1;
       state.targetYaw = Math.tanh(x * 1.15) * YAW;
-      state.targetPitch = -Math.tanh(y * 1.15) * PITCH;
+      state.targetPitch = Math.tanh(y * 1.15) * PITCH;
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
+
+    /* A click cocks its head: one impulse into a damped spring, which is what
+       makes it read as a look rather than as an animation. Both renders take
+       the same impulse, so the piece and the letters cock together. */
+    let lean = 1;
+    const onDown = () => {
+      if (!state.visible || view.reduced) return;
+      lean = -lean;
+      state.rollVel += lean * 4.2;
+    };
+    window.addEventListener("pointerdown", onDown, { passive: true });
 
     /* --------------------------------------------------------- frames -- */
     const io = new IntersectionObserver(
@@ -487,6 +514,11 @@ export default function MaskScene({
         state.yaw += (state.targetYaw + sway - state.yaw) * k;
         state.pitch += (state.targetPitch + nod - state.pitch) * k;
       }
+      /* stiffness and damping tuned so it tips over in about a fifth of a
+         second and is still again inside a second, with one small rebound */
+      state.rollVel += (-state.roll * 26 - state.rollVel * 5.2) * dt;
+      state.roll += state.rollVel * dt;
+
       state.ready = Math.min(1, state.ready + dt * 1.4);
       /* written by the scroll engine on the frame: 0 in the card, 1 once the
          case is the screen */
@@ -508,7 +540,7 @@ export default function MaskScene({
       const framing =
         variant === "fill"
           ? 0.34
-          : 1.28 + (aspect > 1 ? 0.78 : 0.2) * state.horizon;
+          : 1.28 + (aspect > 1 ? 0.42 : 0.05) * state.horizon;
       const dist = (halfHeight * framing * fit) / Math.tan(fov / 2);
       const eye = [0, 0.02, dist];
 
@@ -527,7 +559,7 @@ export default function MaskScene({
       gl.uniformMatrix4fv(
         u.model,
         false,
-        modelMatrix(state.yaw, state.pitch, 1, shiftX, shiftY),
+        modelMatrix(state.yaw, state.pitch, 1, shiftX, shiftY, state.roll),
       );
       /* Where the piece hangs, in the frame's own coordinates, so the wires
          above it and anything else the room hangs can follow it. */
@@ -536,7 +568,11 @@ export default function MaskScene({
         "--mask-x",
         `${(50 + (shiftX / halfWidth) * 50).toFixed(2)}%`,
       );
-      gl.uniformMatrix3fv(u.normal, false, normalMatrix(state.yaw, state.pitch));
+      gl.uniformMatrix3fv(
+        u.normal,
+        false,
+        normalMatrix(state.yaw, state.pitch, state.roll),
+      );
       gl.uniform3f(u.eye, eye[0], eye[1], eye[2]);
 
       /* One lamp, hung above and a little in front, aimed at the middle of
@@ -562,6 +598,7 @@ export default function MaskScene({
       io.disconnect();
       near.disconnect();
       window.removeEventListener("pointermove", onPointer);
+      window.removeEventListener("pointerdown", onDown);
       for (const b of buffers) gl.deleteBuffer(b);
       gl.deleteVertexArray(vao);
       for (const t of [texColor, texNormal, texRough]) gl.deleteTexture(t);
