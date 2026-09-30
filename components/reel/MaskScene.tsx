@@ -246,7 +246,19 @@ const normalMatrix = (yaw: number, pitch: number) => {
   return new Float32Array([m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]]);
 };
 
-export default function MaskScene({ className = "" }: { className?: string }) {
+export default function MaskScene({
+  className = "",
+  /**
+   * "piece" is the mask itself, standing on the sheet. "fill" is the same
+   * scene again, framed close, drawn behind the headline and cut to its
+   * letters — it reads as texture rather than as a face, and because both
+   * variants follow the same pointer they turn together.
+   */
+  variant = "piece",
+}: {
+  className?: string;
+  variant?: "piece" | "fill";
+}) {
   const host = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -478,7 +490,10 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       state.ready = Math.min(1, state.ready + dt * 1.4);
       /* written by the scroll engine on the frame: 0 in the card, 1 once the
          case is the screen */
-      const open = Number(canvas.parentElement?.dataset.open ?? 0);
+      const open =
+        variant === "fill"
+          ? 1
+          : Number(canvas.parentElement?.dataset.open ?? 0);
       state.horizon += (open - state.horizon) * Math.min(1, dt * 3);
 
       /* The mask is framed by height, so a wide frame gives it air at the
@@ -490,7 +505,10 @@ export default function MaskScene({ className = "" }: { className?: string }) {
          dark room, which is what the room is for. */
       /* A tall screen has no width to spare, so the piece stays large there;
          a wide one can afford the room around it. */
-      const framing = 1.28 + (aspect > 1 ? 0.78 : 0.2) * state.horizon;
+      const framing =
+        variant === "fill"
+          ? 0.52
+          : 1.28 + (aspect > 1 ? 0.78 : 0.2) * state.horizon;
       const dist = (halfHeight * framing * fit) / Math.tan(fov / 2);
       const eye = [0, 0.02, dist];
 
@@ -502,7 +520,10 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       const shiftX = 0;
       /* Down, into the lower half of the sheet: the headline is the top of
          the page. */
-      const shiftY = (aspect > 1 ? 0.06 : 0.0) * state.horizon * halfHeight;
+      const shiftY =
+        variant === "fill"
+          ? -0.12 * halfHeight
+          : (aspect > 1 ? 0.06 : 0.0) * state.horizon * halfHeight;
       gl.uniformMatrix4fv(
         u.model,
         false,
@@ -546,7 +567,7 @@ export default function MaskScene({ className = "" }: { className?: string }) {
       for (const t of [texColor, texNormal, texRough]) gl.deleteTexture(t);
       gl.deleteProgram(program);
     };
-  }, []);
+  }, [variant]);
 
   return <canvas ref={host} aria-hidden className={className} />;
 }

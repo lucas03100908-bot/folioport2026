@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { view } from "@/lib/state";
 import MaskRoom from "./MaskRoom";
+import MaskHeadline from "./MaskHeadline";
 import MaskScene from "./MaskScene";
 
 /**
@@ -77,41 +78,15 @@ export default function ReelStage() {
           />
 
           {/* The headline sits BEHIND the piece, as the comp has it: the mask
-              stands in front of its own name. Its own layer, so the paper,
-              then the type, then the piece, then the small print. */}
+              stands in front of its own name, and the wood inside the letters
+              is the same scene, turning with it. */}
           <div
             data-engine="reel-headlayer"
             className="engine-driven pointer-events-none absolute inset-x-0 top-0 px-gutter opacity-0"
             style={{ paddingTop: "var(--head-top)" }}
           >
-            <div className="mx-auto w-full max-w-page">
-                <p
-                  data-engine="reel-head"
-                  className="engine-driven text-center uppercase"
-                  style={{
-                    fontFamily: "var(--font-poster)",
-                    fontSize: "var(--head-size)",
-                    lineHeight: 0.78,
-                    letterSpacing: "0.005em",
-                    /* Not the uv atlas — that is a sheet of scattered
-                       islands and reads as noise inside a letter. This is a
-                       still of the piece as the page itself renders it,
-                       cropped to the band from the brow to the lotus: wood
-                       grain, carved rings and dancheong, all of it coherent
-                       at letter size. */
-                    backgroundImage: "url(/model/tal-fill.webp)",
-                    backgroundSize: "100% 235%",
-                    backgroundPosition: "50% 38%",
-                    backgroundRepeat: "no-repeat",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  <span className="block">Bangsangsi</span>
-                  <span className="block">Mask Talmyeon</span>
-                </p>
+            <div data-engine="reel-head" className="engine-driven mx-auto w-full max-w-page">
+              <MaskHeadline />
             </div>
           </div>
 
@@ -133,7 +108,7 @@ export default function ReelStage() {
               /* two lines of headline at 0.78 leading, then a line of air */
               style={{
                 paddingTop:
-                  "calc(var(--head-top) + var(--head-size) * 1.56 + 0.6rem)",
+                  "calc(var(--head-top) + var(--head-h, 34vh) + 0.6rem)",
 
               }}
             >
