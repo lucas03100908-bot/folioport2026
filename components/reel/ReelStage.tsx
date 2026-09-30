@@ -58,7 +58,7 @@ export default function ReelStage() {
             /* The headline lives in its own layer behind the piece, and the
                small print has to start below it: both read this. */
             "--head-size": "clamp(3.4rem, 17.2vw, 17rem)",
-            "--head-top": "calc(var(--nav-h) + 0.1rem)",
+            "--head-top": "var(--nav-h)",
           } as CSSProperties}
         >
           <MaskRoom />
@@ -82,10 +82,10 @@ export default function ReelStage() {
               is the same scene, turning with it. */}
           <div
             data-engine="reel-headlayer"
-            className="engine-driven pointer-events-none absolute inset-x-0 top-0 px-gutter opacity-0"
+            className="engine-driven pointer-events-none absolute inset-x-0 top-0 px-3 opacity-0 md:px-4"
             style={{ paddingTop: "var(--head-top)" }}
           >
-            <div data-engine="reel-head" className="engine-driven mx-auto w-full max-w-page">
+            <div data-engine="reel-head" className="engine-driven w-full">
               <MaskHeadline />
             </div>
           </div>

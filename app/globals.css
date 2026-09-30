@@ -304,7 +304,7 @@ header span {
    same variable, so the two never drift apart */
 @media (max-width: 767px) {
   [data-engine="reel-frame"] {
-    --head-top: calc(var(--nav-h) + 0.9rem) !important;
+    --head-top: calc(var(--nav-h) + 0.4rem) !important;
   }
 }
 
