@@ -156,9 +156,6 @@ export const HERO_BG_MOBILE_SRC = "/video/hero-bg-mobile.mp4";
  * `tools/glb-to-mesh.mjs` from a 10.5MB glb. 1.5MB all in, fetched only once
  * the stage is a viewport away.
  */
-/** the painting the mask sheet's headline is cut out of */
-export const MINHWA_PLATE_SRC = "/model/minhwa-plate.webp";
-
 export const MASK_MESH_SRC = "/model/tal.bin";
 export const MASK_MAPS = {
   color: "/model/tal-color.webp",

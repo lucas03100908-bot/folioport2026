@@ -507,7 +507,7 @@ export default function MaskScene({
          a wide one can afford the room around it. */
       const framing =
         variant === "fill"
-          ? 0.52
+          ? 0.34
           : 1.28 + (aspect > 1 ? 0.78 : 0.2) * state.horizon;
       const dist = (halfHeight * framing * fit) / Math.tan(fov / 2);
       const eye = [0, 0.02, dist];

@@ -1,17 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MINHWA_PLATE_SRC } from "@/lib/content";
+import MaskScene from "./MaskScene";
 
 
 /**
  * The headline, cut out of the piece itself.
  *
  * Two lines of Bebas, each stretched to the full measure, used as a clipping
- * path over a minhwa painting — cobalt sky, green peaks, waterfalls, a field
- * of waves, red pines, the moon and the sun. The plate drifts with the
- * pointer, so the view through the letters moves with the piece standing in
- * front of them rather than sitting dead behind it.
+ * path over a second, closer render of the same mask. The letters are a
+ * window onto the piece itself, and both renders read the same pointer: move
+ * the cursor and the carving inside the type turns with the face standing in
+ * front of it.
  *
  * The letters are SVG text rather than HTML, because an SVG `clipPath` is the
  * only way to cut a canvas to a letterform in every browser the site
@@ -79,36 +79,6 @@ export default function MaskHeadline({ id = "tal-letters" }: { id?: string }) {
     return () => ro.disconnect();
   }, [fit]);
 
-  /* The plate follows the pointer the way the piece does, a fraction as far:
-     enough that the view through the letters is alive, not enough to read as
-     a parallax trick. */
-  useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let raf = 0;
-    let x = 0;
-    let y = 0;
-    let tx = 0;
-    let ty = 0;
-    const onMove = (e: PointerEvent) => {
-      tx = (e.clientX / window.innerWidth) * 2 - 1;
-      ty = (e.clientY / window.innerHeight) * 2 - 1;
-    };
-    const frame = () => {
-      raf = requestAnimationFrame(frame);
-      x += (tx - x) * 0.06;
-      y += (ty - y) * 0.06;
-      if (plate.current) {
-        plate.current.style.transform = `translate3d(${(-x * 2.6).toFixed(2)}%, ${(-y * 2.2).toFixed(2)}%, 0)`;
-      }
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    raf = requestAnimationFrame(frame);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("pointermove", onMove);
-    };
-  }, []);
-
   /* Where each line's baseline sits, in the same units the text is set in. */
   let y = 0;
   const baselines = sizes.map((s) => {
@@ -150,39 +120,24 @@ export default function MaskHeadline({ id = "tal-letters" }: { id?: string }) {
           reads the same pointer as the piece in front, so the two turn
           together. */}
       <div
-        className="absolute inset-0 bg-[#0c1b4a]"
+        className="absolute inset-0 bg-[#2a1d16]"
         style={{ clipPath: `url(#${id})`, WebkitClipPath: `url(#${id})` }}
       >
-        {/* Oversized and offset by the pointer: a letter at either end of the
-            line still lands on painting, and the whole plate slides a little
-            as the piece in front of it turns. */}
+        {/* A square canvas, as wide as the line and centred on it: the
+            letters run three or four times wider than they are tall, and a
+            canvas of that shape would leave the scene's own ground showing in
+            every letter at the ends. Square and oversized, the piece covers
+            the whole measure. */}
         <div
           ref={plate}
-          className="absolute"
+          className="absolute left-1/2 top-1/2"
           style={{
-            /* The whole painting across the two lines, as the comp has it:
-               its sky, moon and sun land in the first line and its mountains
-               and water in the second. A little larger than the box on every
-               side, so the parallax never opens a gap. */
-            left: "-5%",
-            top: "-6%",
-            width: "110%",
-            height: "112%",
-            willChange: "transform",
+            width: box.w || undefined,
+            height: box.w || undefined,
+            transform: "translate(-50%, -50%)",
           }}
         >
-          {/* The painting itself, as supplied: the letters are a window onto
-              it. Drawn with an <img> rather than redrawn in SVG, because it
-              is a painting and redrawing it is a copy, not a crop. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={MINHWA_PLATE_SRC}
-            alt=""
-            aria-hidden
-            /* stretched rather than cropped: the letters want the whole
-               composition, not a window onto part of it */
-            className="h-full w-full"
-          />
+          <MaskScene className="absolute inset-0 h-full w-full" variant="fill" />
         </div>
       </div>
     </div>
