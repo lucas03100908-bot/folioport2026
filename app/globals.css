@@ -833,6 +833,67 @@ header span {
   );
 }
 
+/* ----------------------------------------------------- the press cue --- */
+/*
+ * "Click the mask", made to catch an eye that is not reading.
+ *
+ * Text that blinks reads as a fault, so nothing here blinks. The ring
+ * repeats instead: it opens out of the mark and fades, the way a press
+ * looks, every two and a bit seconds — long enough that it is never
+ * flashing and often enough that it cannot be sat through. Under it the
+ * whole cue breathes, on the same clock, so the line reads as one thing
+ * rather than as a label with a moving dot beside it.
+ *
+ * The breath is shallow — 0.78 to 1 — on purpose. The thing that has to
+ * catch the eye is the ring, which moves; dimming the words to catch
+ * attention makes them harder to read at exactly the moment someone looks
+ * over, which is the opposite of the point.
+ */
+.reel-press {
+  animation: reel-press-breathe 2.4s var(--ease-in-out) infinite;
+}
+@keyframes reel-press-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.78;
+  }
+}
+
+.reel-press-ring {
+  /* Without `fill-box` the scale is taken about the SVG's user-space origin
+     and the ring flies off the corner instead of opening from the mark. */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: reel-press-ring 2.4s var(--ease-out) infinite;
+}
+@keyframes reel-press-ring {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  72%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The cue is not shown at all under reduced motion — the press does not
+     move the piece there — but the rules come off anyway rather than
+     relying on that to hide them. */
+  .reel-press,
+  .reel-press-ring {
+    animation: none;
+  }
+}
+
 /* ------------------------------------------------- discipline glow --- */
 /*
  * The light a hovered tank throws into the room behind it.

@@ -182,24 +182,35 @@ export default function ReelStage() {
             */}
           <span
             data-engine="reel-cue-c"
-            className="engine-driven absolute flex items-center gap-2.5 whitespace-nowrap text-label text-[#141210] opacity-0"
+            className="engine-driven absolute whitespace-nowrap opacity-0"
             suppressHydrationWarning
           >
-            <svg width="15" height="15" viewBox="0 0 15 15" aria-hidden>
-              {/* a press: the mark and the ring it sends out */}
-              <circle cx="7.5" cy="7.5" r="2.1" fill="currentColor" />
-              <circle
-                cx="7.5"
-                cy="7.5"
-                r="5.6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.1"
-                opacity="0.5"
-              />
-            </svg>
-            <span className="max-[899px]:hidden">CLICK THE MASK</span>
-            <span className="min-[900px]:hidden">TAP THE MASK</span>
+            {/*
+              * The animation lives on this inner span, never on the element
+              * the engine writes: a running CSS animation outranks an inline
+              * style, so breathing the outer one would have pinned the cue
+              * visible for the whole stage. Two opacities, multiplied.
+              */}
+            <span className="reel-press flex items-center gap-2.5 text-label text-[#141210]">
+              <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden>
+                {/* The press itself, and the ring it sends out — the ring
+                    repeats, which is the part that catches an eye that is
+                    not reading. */}
+                <circle
+                  className="reel-press-ring"
+                  cx="11"
+                  cy="11"
+                  r="4.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+                <circle cx="11" cy="11" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.1" opacity="0.45" />
+                <circle cx="11" cy="11" r="2" fill="currentColor" />
+              </svg>
+              <span className="max-[899px]:hidden">CLICK THE MASK</span>
+              <span className="min-[900px]:hidden">TAP THE MASK</span>
+            </span>
           </span>
           <span
             data-engine="reel-cue-b"

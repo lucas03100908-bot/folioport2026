@@ -460,6 +460,9 @@ export default function MaskScene({
        makes it read as a look rather than as an animation. Both renders take
        the same impulse, so the piece and the letters cock together. */
     let lean = 1;
+    /* seconds since the last unprompted nudge, and how long between them */
+    let nudgeAt = 0;
+    const NUDGE_EVERY = 4.5;
     const onDown = () => {
       if (!state.visible || view.reduced) return;
       lean = -lean;
@@ -508,6 +511,14 @@ export default function MaskScene({
       const sway = Math.sin(state.idle * 0.42) * 0.05;
       const nod = Math.sin(state.idle * 0.31 + 1.1) * 0.025;
 
+      /* written by the scroll engine on the frame: 0 in the card, 1 once the
+         case is the screen. Read here rather than further down because the
+         nudge below needs to know whether the piece is up. */
+      const openNow =
+        variant === "fill"
+          ? 1
+          : Number(canvas.parentElement?.dataset.open ?? 0);
+
       if (view.reduced) {
         state.yaw = 0.12;
         state.pitch = 0.04;
@@ -516,18 +527,37 @@ export default function MaskScene({
         state.yaw += (state.targetYaw + sway - state.yaw) * k;
         state.pitch += (state.targetPitch + nod - state.pitch) * k;
       }
+      /*
+       * Until it has been pressed, it offers.
+       *
+       * A line of type at the foot of the page asking for a press is read by
+       * whoever is reading; most visitors are looking at the piece. So every
+       * few seconds the piece gives a small version of the answer itself — a
+       * quarter of the impulse a press lands, the same spring, alternating
+       * sides. It is the only thing on the screen that says "this responds"
+       * to someone who is not reading, and it stops for good the moment it
+       * is taken up, because an offer that keeps being made after it has
+       * been accepted is a tic.
+       *
+       * The piece has to be up and the stage on screen: a nudge delivered to
+       * a mask still inside its card is spent where nobody is looking.
+       */
+      if (!view.masked && !view.reduced && state.visible && openNow > 0.6) {
+        nudgeAt += dt;
+        if (nudgeAt > NUDGE_EVERY) {
+          nudgeAt = 0;
+          lean = -lean;
+          state.rollVel += lean * 1.1;
+        }
+      }
+
       /* stiffness and damping tuned so it tips over in about a fifth of a
          second and is still again inside a second, with one small rebound */
       state.rollVel += (-state.roll * 26 - state.rollVel * 5.2) * dt;
       state.roll += state.rollVel * dt;
 
       state.ready = Math.min(1, state.ready + dt * 1.4);
-      /* written by the scroll engine on the frame: 0 in the card, 1 once the
-         case is the screen */
-      const open =
-        variant === "fill"
-          ? 1
-          : Number(canvas.parentElement?.dataset.open ?? 0);
+      const open = openNow;
       state.horizon += (open - state.horizon) * Math.min(1, dt * 3);
 
       /* The mask is framed by height, so a wide frame gives it air at the
