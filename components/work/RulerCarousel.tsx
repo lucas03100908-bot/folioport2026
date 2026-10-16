@@ -56,6 +56,7 @@ export default function RulerCarousel({
   tall = false,
   liquid = false,
   onActivate,
+  onHover,
 }: {
   items: RailItem[];
   cta: string;
@@ -64,6 +65,8 @@ export default function RulerCarousel({
   /** only the disciplines hold liquid; projects are their stills */
   liquid?: boolean;
   onActivate: (index: number) => void;
+  /** which card a mouse is over, or null — the chooser lights the room with it */
+  onHover?: (index: number | null) => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const current = () =>
@@ -235,6 +238,18 @@ export default function RulerCarousel({
               transform: `translate3d(-50%, -50%, 0) scale(${i === 0 ? 1 : 0.72})`,
               opacity: i === 0 ? 1 : 0,
             }}
+            /* Mouse only. A touch fires `pointerenter` on tap and never fires
+               the matching leave, so on a phone the first tap would have left
+               the room lit for the rest of the visit. Focus counts too — a
+               card reached by Tab is the card being looked at. */
+            onPointerEnter={(e) => {
+              if (e.pointerType === "mouse") onHover?.(i);
+            }}
+            onPointerLeave={(e) => {
+              if (e.pointerType === "mouse") onHover?.(null);
+            }}
+            onFocus={() => onHover?.(i)}
+            onBlur={() => onHover?.(null)}
           >
             <LiquidTank
               tint={it.tint}

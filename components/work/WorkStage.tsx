@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
 import {
   CATEGORIES,
   CATEGORY_TINT,
@@ -9,6 +9,7 @@ import {
   type CategoryId,
 } from "@/lib/content";
 import { view } from "@/lib/state";
+import DisciplineGlow from "./DisciplineGlow";
 import RulerCarousel, { type RailItem } from "./RulerCarousel";
 import { useWork } from "./WorkProvider";
 import Reveal from "@/components/ui/reveal";
@@ -27,6 +28,10 @@ const VH_PER_ITEM = 58;
 export default function WorkStage() {
   const { category, setCategory, open } = useWork();
   const isOpen = category !== "all";
+  /* Which discipline the pointer is over, so the room behind the rail can
+     take its colour. Only the chooser has it; a project card is a picture and
+     brings its own. */
+  const [lit, setLit] = useState<number | null>(null);
   const decks = CATEGORIES.filter((c) => c.id !== "all");
   const projects = isOpen ? projectsFor(category as CategoryId) : [];
   const label = CATEGORIES.find((c) => c.id === category)?.label ?? "";
@@ -49,6 +54,11 @@ export default function WorkStage() {
         // no still: a discipline is not a picture, and the liquid is the
         // thing that distinguishes it. Stills belong to projects.
       }));
+
+  /* A card can be taken out from under the pointer without a leave ever
+     firing — the rail moves on scroll, and opening a discipline replaces the
+     whole set. Either way the light has to go out with it. */
+  useEffect(() => setLit(null), [category]);
 
   // the well's height follows the item count — the engine must re-measure
   useLayoutEffect(() => {
@@ -84,6 +94,13 @@ export default function WorkStage() {
       style={{ "--well": `${items.length * VH_PER_ITEM}vh` } as CSSProperties}
     >
       <div className="sticky top-0 flex h-svh w-full flex-col overflow-hidden">
+        {isOpen ? null : (
+          <DisciplineGlow
+            ids={decks.map((c) => c.id as CategoryId)}
+            lit={lit}
+          />
+        )}
+
         <header className="work-head shrink-0 px-gutter pt-[calc(var(--nav-h)+4vh)]">
           <div className="mx-auto w-full max-w-page">
             {isOpen ? (
@@ -132,6 +149,7 @@ export default function WorkStage() {
             tall={!isOpen}
             liquid={!isOpen}
             onActivate={activate}
+            onHover={isOpen ? undefined : setLit}
           />
         </div>
 

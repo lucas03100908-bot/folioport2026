@@ -812,3 +812,108 @@ header span {
   perspective: 1600px;
   perspective-origin: 50% 50%;
 }
+
+/* ------------------------------------------------- discipline glow --- */
+/*
+ * The light a hovered tank throws into the room behind it.
+ *
+ * `--glow` is the card's own liquid, converted out of the shader's linear
+ * space by `tintCss`. Only the layer's opacity is transitioned — the lobes
+ * hold a fixed colour, so a move from one card to the next is two opacities
+ * crossing rather than a colour snapping over.
+ */
+.disc-glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--dur-scene) var(--ease-dissolve);
+}
+.disc-glow[data-lit="1"] {
+  opacity: 1;
+}
+
+.disc-glow-lobe {
+  position: absolute;
+  display: block;
+  /* `closest-side` with unequal sides gives an ellipse rather than a circle
+     masked to a box, so nothing has an edge. */
+  background: radial-gradient(closest-side, var(--glow), transparent 74%);
+  will-change: transform;
+}
+
+/* Behind the card, and wider than it: most of this one is covered, and what
+   is seen of it is the spill around the card's edges. */
+.disc-glow-a {
+  left: 50%;
+  top: 54%;
+  width: 116vw;
+  height: 92vh;
+  margin-left: -58vw;
+  margin-top: -46vh;
+  opacity: 0.26;
+  animation: disc-drift-a 26s var(--ease-in-out) infinite alternate;
+}
+/* The two that reach the corners the card never covers. Dimmer, because a
+   lobe out in the open is read directly and the one behind the card is not. */
+.disc-glow-b {
+  left: -14vw;
+  top: -18vh;
+  width: 74vw;
+  height: 78vh;
+  opacity: 0.17;
+  animation: disc-drift-b 31s var(--ease-in-out) infinite alternate;
+}
+.disc-glow-c {
+  right: -16vw;
+  bottom: -20vh;
+  width: 70vw;
+  height: 74vh;
+  opacity: 0.14;
+  animation: disc-drift-c 37s var(--ease-in-out) infinite alternate;
+}
+
+/* Small and slow. A lobe that visibly travels turns the background into
+   something to watch, and the card is the thing to watch. */
+@keyframes disc-drift-a {
+  from {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(4%, 3%, 0) scale(1.07);
+  }
+}
+@keyframes disc-drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(7%, 5%, 0) scale(1.12);
+  }
+}
+@keyframes disc-drift-c {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.06);
+  }
+  to {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+}
+
+.disc-glow-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  mix-blend-mode: overlay;
+  transition: opacity var(--dur-scene) var(--ease-dissolve);
+}
+.disc-glow-grain[data-lit="1"] {
+  opacity: 0.055;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The glow still arrives — it is a change of light, not of position — but
+     it arrives where it means to stand and stays there. */
+  .disc-glow-lobe {
+    animation: none;
+  }
+}

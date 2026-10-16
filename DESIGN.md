@@ -198,6 +198,8 @@ The room is flat and dark, and depth comes from light, not from stacked shadows.
 
 **The Glass-Over-Film Rule.** Backdrop blur exists to separate a panel from moving image under it. Over a still black ground it is decoration, so it is not allowed there.
 
+**The Spill Rule.** A lit object spills onto the room behind it, and only a lit object does. The chooser's tanks are the one light source on a black stage, so hovering one washes the dark around it in that tank's own liquid — `tintCss` converts the shader's linear tint to sRGB so there is a single set of colour values, not two. The spill is light, never a surface: no edge, no border, no shape of its own, fading at scene speed and gone the moment the pointer leaves. Nothing that is not itself lit may do this.
+
 ## Shapes
 
 Two shapes only. **Frames** (the liquid tanks, the reel window, detail media, the contact card, the dialog) share one gently rounded corner (16px, `rounded-frame`). The reel window opens from 16px to 0 as it becomes the screen. **Controls** that float (back, close, dialog buttons, the tilt pill) are full pills. The outline CTA stays square, because it is set type rather than a floating control. Rules and dividers are 1px hairlines.
