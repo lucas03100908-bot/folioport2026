@@ -28,9 +28,10 @@ const VH_PER_ITEM = 58;
 export default function WorkStage() {
   const { category, setCategory, open } = useWork();
   const isOpen = category !== "all";
-  /* Which discipline the pointer is over, so the room behind the rail can
-     take its colour. Only the chooser has it; a project card is a picture and
-     brings its own. */
+  /* Which card the pointer is over, so the room behind the rail can take its
+     colour. On the chooser that is the hovered tank's own liquid; inside a
+     discipline every card belongs to the same one, so the whole rail lights
+     the room in that discipline's colour. */
   const [lit, setLit] = useState<number | null>(null);
   const decks = CATEGORIES.filter((c) => c.id !== "all");
   const projects = isOpen ? projectsFor(category as CategoryId) : [];
@@ -94,12 +95,16 @@ export default function WorkStage() {
       style={{ "--well": `${items.length * VH_PER_ITEM}vh` } as CSSProperties}
     >
       <div className="sticky top-0 flex h-svh w-full flex-col overflow-hidden">
-        {isOpen ? null : (
-          <DisciplineGlow
-            ids={decks.map((c) => c.id as CategoryId)}
-            lit={lit}
-          />
-        )}
+        <DisciplineGlow
+          ids={
+            isOpen
+              ? [category as CategoryId]
+              : decks.map((c) => c.id as CategoryId)
+          }
+          /* Inside a discipline there is one colour to light, whichever card
+             is hovered — so any card lights layer 0. */
+          lit={isOpen ? (lit === null ? null : 0) : lit}
+        />
 
         {/* `relative z-10` on all three, because the glow behind them is a
             positioned layer and in-flow siblings would otherwise paint under
@@ -153,7 +158,7 @@ export default function WorkStage() {
             tall={!isOpen}
             liquid={!isOpen}
             onActivate={activate}
-            onHover={isOpen ? undefined : setLit}
+            onHover={setLit}
           />
         </div>
 

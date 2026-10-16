@@ -399,7 +399,7 @@ function Rule({ flipped = false }: { flipped?: boolean }) {
   return (
     <div
       aria-hidden
-      className={`relative h-6 w-full overflow-hidden ${flipped ? "rail-rule-b" : ""}`}
+      className={`rail-rule-mask relative h-6 w-full overflow-hidden ${flipped ? "rail-rule-b" : ""}`}
       style={{ transform: flipped ? "scaleY(-1)" : undefined }}
     >
       <div
@@ -414,13 +414,12 @@ function Rule({ flipped = false }: { flipped?: boolean }) {
           backgroundRepeat: "repeat-x",
         }}
       />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(90deg, #000 0%, transparent 14%, transparent 86%, #000 100%)",
-        }}
-      />
+      {/* The rule used to end in two wedges of solid #000 painted over the
+          ticks. That only reads as a fade while the ground behind it is black
+          — the moment a hovered card lit the room, both ends of both rules
+          turned into black blocks with a hard edge. The fade is a mask on the
+          wrapper now (see `.rail-rule-mask`), so the ticks fade to nothing
+          over whatever happens to be behind them. */}
     </div>
   );
 }

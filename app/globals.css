@@ -813,107 +813,99 @@ header span {
   perspective-origin: 50% 50%;
 }
 
+/* Both rules run off the sides rather than being capped: see the note in
+   RulerCarousel's Rule. A mask, not a black overlay, so it works over the
+   lit ground as well as the dark one. */
+.rail-rule-mask {
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 14%,
+    #000 86%,
+    transparent 100%
+  );
+}
+
 /* ------------------------------------------------- discipline glow --- */
 /*
  * The light a hovered tank throws into the room behind it.
  *
- * `--glow` is the card's own liquid, converted out of the shader's linear
- * space by `tintCss`. Only the layer's opacity is transitioned — the lobes
- * hold a fixed colour, so a move from one card to the next is two opacities
- * crossing rather than a colour snapping over.
+ * The field itself is a shader (see DisciplineGlow). Everything here is the
+ * shape of it: where it is allowed to reach, and how it arrives.
  */
-.disc-glow {
-  position: absolute;
-  inset: 0;
+
+/*
+ * The chrome keeps its dark.
+ *
+ * The nav is fixed over this stage and the rail's counter and cue sit under
+ * it, all of them set in the dim greys that read at 4.62:1 on black and fall
+ * under the contrast floor the moment the ground behind them lifts. The
+ * field is faded out across the nav's height at the top and the controls'
+ * band at the bottom, so the two strips of screen carrying small dim type
+ * are the two strips the glow never reaches.
+ */
+.disc-glow-field {
+  --disc-glow-top: calc(var(--nav-h) + 2.5rem);
+  --disc-glow-bottom: 7rem;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--disc-glow-top),
+    #000 calc(100% - var(--disc-glow-bottom)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--disc-glow-top),
+    #000 calc(100% - var(--disc-glow-bottom)),
+    transparent 100%
+  );
+}
+
+/*
+ * The shape of the light.
+ *
+ * An ellipse centred where the card stands, falling to nothing well inside
+ * the corners. The shader supplies the movement and the colour; this decides
+ * how far any of it carries, which is the difference between a lamp in a
+ * dark room and a tint laid over the whole screen.
+ */
+.disc-glow-pool {
+  mask-image: radial-gradient(
+    ellipse 74% 60% at 50% 52%,
+    #000 0%,
+    #000 18%,
+    transparent 82%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 74% 60% at 50% 52%,
+    #000 0%,
+    #000 18%,
+    transparent 82%
+  );
+}
+
+/*
+ * `screen` and not `normal`: the field's own darkest colour is a near-black
+ * of the card's water, and laid over the stage flat it would *replace* the
+ * black rather than add to it — a dark grey rectangle inside the pool's
+ * edge, which is the one thing a light must never look like. Screened, the
+ * ramp's bottom end contributes nothing and only what is brighter than the
+ * room shows up.
+ */
+.disc-glow-canvas {
   opacity: 0;
+  mix-blend-mode: screen;
   transition: opacity var(--dur-scene) var(--ease-dissolve);
 }
-.disc-glow[data-lit="1"] {
-  opacity: 1;
-}
-
-.disc-glow-lobe {
-  position: absolute;
-  display: block;
-  /* `closest-side` with unequal sides gives an ellipse rather than a circle
-     masked to a box, so nothing has an edge. */
-  background: radial-gradient(closest-side, var(--glow), transparent 74%);
-  will-change: transform;
-}
-
-/* Behind the card, and wider than it: most of this one is covered, and what
-   is seen of it is the spill around the card's edges. */
-.disc-glow-a {
-  left: 50%;
-  top: 54%;
-  width: 116vw;
-  height: 92vh;
-  margin-left: -58vw;
-  margin-top: -46vh;
-  opacity: 0.26;
-  animation: disc-drift-a 26s var(--ease-in-out) infinite alternate;
-}
-/* The two that reach the corners the card never covers. Dimmer, because a
-   lobe out in the open is read directly and the one behind the card is not. */
-.disc-glow-b {
-  left: -14vw;
-  top: -18vh;
-  width: 74vw;
-  height: 78vh;
-  opacity: 0.17;
-  animation: disc-drift-b 31s var(--ease-in-out) infinite alternate;
-}
-.disc-glow-c {
-  right: -16vw;
-  bottom: -20vh;
-  width: 70vw;
-  height: 74vh;
-  opacity: 0.14;
-  animation: disc-drift-c 37s var(--ease-in-out) infinite alternate;
-}
-
-/* Small and slow. A lobe that visibly travels turns the background into
-   something to watch, and the card is the thing to watch. */
-@keyframes disc-drift-a {
-  from {
-    transform: translate3d(-3%, -2%, 0) scale(1);
-  }
-  to {
-    transform: translate3d(4%, 3%, 0) scale(1.07);
-  }
-}
-@keyframes disc-drift-b {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(7%, 5%, 0) scale(1.12);
-  }
-}
-@keyframes disc-drift-c {
-  from {
-    transform: translate3d(0, 0, 0) scale(1.06);
-  }
-  to {
-    transform: translate3d(-6%, -4%, 0) scale(1);
-  }
-}
-
-.disc-glow-grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  mix-blend-mode: overlay;
-  transition: opacity var(--dur-scene) var(--ease-dissolve);
-}
-.disc-glow-grain[data-lit="1"] {
-  opacity: 0.055;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* The glow still arrives — it is a change of light, not of position — but
-     it arrives where it means to stand and stays there. */
-  .disc-glow-lobe {
-    animation: none;
-  }
+.disc-glow-canvas[data-lit="1"] {
+  opacity: 0.55;
 }

@@ -116,24 +116,6 @@ export const CATEGORY_TINT: Record<CategoryId, [number, number, number]> = {
   realtime: [0.05, 0.46, 0.52], // 187°  open water
   ux: [0.20, 0.70, 0.56], // 162°  the shallows
 };
-
-/**
- * The same water, in a form CSS can be handed.
- *
- * The tints above are linear — that is the space the tank's shader mixes in —
- * and a browser reads a colour as sRGB. Handing CSS the raw triple gives a
- * muddy, far darker version of the liquid it is meant to match, so the
- * transfer function is applied here rather than a second set of hex values
- * being kept alongside the first and drifting away from it.
- */
-const toSrgb = (c: number) =>
-  Math.round(
-    255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055),
-  );
-
-export const tintCss = (t: [number, number, number]) =>
-  `rgb(${t.map(toSrgb).join(" ")})`;
-
 /* ------------------------------------------------------------- socials --- */
 export const SOCIALS = [
   { label: "INSTAGRAM", href: "https://www.instagram.com/mho.xxv/" },

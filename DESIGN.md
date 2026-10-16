@@ -198,7 +198,7 @@ The room is flat and dark, and depth comes from light, not from stacked shadows.
 
 **The Glass-Over-Film Rule.** Backdrop blur exists to separate a panel from moving image under it. Over a still black ground it is decoration, so it is not allowed there.
 
-**The Spill Rule.** A lit object spills onto the room behind it, and only a lit object does. The chooser's tanks are the one light source on a black stage, so hovering one washes the dark around it in that tank's own liquid — `tintCss` converts the shader's linear tint to sRGB so there is a single set of colour values, not two. The spill is light, never a surface: no edge, no border, no shape of its own, fading at scene speed and gone the moment the pointer leaves. Nothing that is not itself lit may do this.
+**The Spill Rule.** A lit object spills onto the room behind it, and only a lit object does. The chooser's tanks are the one light source on a black stage, so hovering one lights the dark around it in that tank's own liquid: a gradient-mesh shader whose three stops are all derived from that discipline's `CATEGORY_TINT`, so the room and the tank cannot drift apart. The spill is light, never a surface — it is screened over the stage rather than laid on it, masked into an ellipse around the card so the corners stay black, and masked back out of the nav's band and the rail controls' band, which carry type dim enough to fall under the Contrast Floor the moment the ground behind it lifts. It fades at scene speed and is gone the moment the pointer leaves. Nothing that is not itself lit may do this.
 
 ## Shapes
 
