@@ -6,7 +6,7 @@
  * `summary` (with "\n\n" between them).
  *
  * Kept apart from content.ts so the types, the category table and the lookup
- * helpers stay readable — this file is long because there are seventeen
+ * helpers stay readable — this file is long because there are eighteen
  * projects, not because anything here is complicated.
  */
 
@@ -107,7 +107,22 @@ export const BASE_PROJECTS: Project[] = [
     thumbnail: "/thumbs/fluid-audioreactive.webp",
     projectUrl: "https://www.youtube.com/watch?v=hoU5xjEDC1c",
   },
-  /* ---------------------------------------------------- motion (7) --- */
+  {
+    id: "bangsangsi-shrine",
+    category: "realtime",
+    title: "BANGSANGSI SHRINE",
+    eyebrow: "Interactive Web Ritual",
+    context: "개인 프로젝트 — 웹 기반 인터랙티브",
+    role: "경험 디자인 / 웹 인터랙션 / 3D 비주얼",
+    tools: "Three.js / MediaPipe / WebGL / Blender",
+    blurb: "웹캠으로 얼굴을 추적해, 모니터를 어두운 사당을 들여다보는 창으로 바꾼 작업.",
+    summary:
+      "모니터 너머에 어두운 사당을 세운 웹 작업입니다. 장승과 한지등, 오방색 천과 도깨비불을 디지털 공간으로 다시 지었고, 그 한가운데에 역병과 악귀를 쫓는 방상시 탈을 놓았습니다.\n\n驅魔 · 祛邪 · 辟邪 · 護民 — 구마 · 거사 · 벽사 · 호민. 악을 몰아내고 사악함을 막아 사람을 보호한다는 네 마디가 이 공간의 주제입니다.\n\n웹캠으로 얼굴 위치를 추적해, 고개를 움직이면 공간의 시점도 함께 움직입니다. 화면을 평면이 아니라 안을 들여다보는 창으로 다루는 Fish Tank VR 방식이며, 헤드셋 없이 브라우저 안에서 깊이가 생깁니다.",
+    tags: ["INTERACTIVE", "WEBGL", "FACE TRACKING", "MOTION·3D"],
+    thumbnail: "/thumbs/bangsangsi-shrine.webp",
+    projectUrl: "https://www.youtube.com/watch?v=ziywPVfLGOM",
+  },
+  /* ---------------------------------------------------- motion (8) --- */
   {
     id: "bloom",
     category: "motion",

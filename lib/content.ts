@@ -43,7 +43,7 @@ export type Project = {
   /**
    * The circumstance the work came out of — a show, a course, a commission,
    * a piece made for its own sake. It replaced `year`, which carried "2026"
-   * on all seventeen records and so told a reader nothing, and absorbed
+   * on every record and so told a reader nothing, and absorbed
    * `type`, which mostly restated the eyebrow above the title in Korean.
    */
   context: string;
