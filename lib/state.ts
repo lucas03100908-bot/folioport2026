@@ -127,6 +127,17 @@ export const view = {
     spreadAt: -Infinity,
   },
 
+  /**
+   * Whether the mask has been pressed yet on this visit.
+   *
+   * Only the cue that invites the press reads it. An instruction that stays
+   * up after it has been followed stops being an instruction and becomes
+   * something to look past, so it is struck the first time the piece moves —
+   * and only then, because a visitor who has not pressed it still needs to
+   * be told. The fade itself is in the writer; this is the fact.
+   */
+  masked: false,
+
   /* environment */
   mobile: false,
   reduced: false,

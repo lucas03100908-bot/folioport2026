@@ -464,6 +464,8 @@ export default function MaskScene({
       if (!state.visible || view.reduced) return;
       lean = -lean;
       state.rollVel += lean * 4.2;
+      /* The cue that asked for this press has nothing left to say. */
+      view.masked = true;
     };
     window.addEventListener("pointerdown", onDown, { passive: true });
 

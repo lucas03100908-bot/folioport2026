@@ -225,7 +225,7 @@ export function writeWork(c: FrameContext) {
  * clock; this only resizes the window onto it.
  */
 export function writeReel(c: FrameContext) {
-  const { nodes, reduced, stageLocal } = c;
+  const { nodes, reduced, stageLocal, dt } = c;
   if (!nodes.reelFrame) return;
 
   const p = stageLocal("reel");
@@ -279,9 +279,40 @@ export function writeReel(c: FrameContext) {
     nodes.reelCueA.style.opacity = String(
       reduced ? 0 : 1 - smoothstep(0.12, 0.42, p),
     );
-  if (nodes.reelCueB)
-    nodes.reelCueB.style.opacity = String(smoothstep(0.62, 0.8, p));
+  /*
+   * The invitation to press.
+   *
+   * It owns the stretch where the scene is complete — the piece up, the
+   * sheet set, nothing else being asked for. That stretch used to belong to
+   * "keep scrolling", which is the wrong thing to say at the one moment
+   * there is something here to do; the scroll cue is pushed to the tail,
+   * where moving on is in fact the next thing.
+   *
+   * It is struck for good the first time the piece is pressed, eased rather
+   * than cut so the screen does not blink: `cueTaken` runs to 1 over about
+   * half a second and never comes back, because the only thing that sets it
+   * is the press itself. Under reduced motion there is nothing to invite —
+   * the press does not move the piece there.
+   */
+  if (nodes.reelCueC) {
+    cueTaken = view.masked ? Math.min(1, cueTaken + dt * 2.2) : 0;
+    const window_ = smoothstep(0.42, 0.52, p) * (1 - smoothstep(0.74, 0.82, p));
+    nodes.reelCueC.style.opacity = String(
+      reduced ? 0 : window_ * (1 - cueTaken),
+    );
+  }
+  /* And once the press has been taken, the scroll cue is free to come back
+     early — the line is not needed for anything else, and an empty line for
+     the rest of the stage reads as the screen having run out of things to
+     say. */
+  if (nodes.reelCueB) {
+    const lo = reduced ? 0.62 : lerp(0.8, 0.6, cueTaken);
+    nodes.reelCueB.style.opacity = String(smoothstep(lo, lo + 0.08, p));
+  }
 }
+
+/** How far the press cue has been struck, 0..1. See `writeReel`. */
+let cueTaken = 0;
 
 /** Connect: the word pulse is time-based, never scroll-based. */
 export function writeConnect({ nodes, reduced }: FrameContext) {

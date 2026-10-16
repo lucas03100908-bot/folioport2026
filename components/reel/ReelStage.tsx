@@ -168,6 +168,39 @@ export default function ReelStage() {
           >
             {reduced ? "SCROLL TO OPEN" : "SCROLL TO EXPAND"}
           </span>
+          {/*
+            * The one thing on this screen you would never guess at.
+            *
+            * The piece follows the pointer on its own, so that much is found
+            * by accident — but nothing about a carved mask suggests it
+            * answers a press, and without a word here most visitors never
+            * press it. It stands in the gap between the two scroll cues,
+            * which is exactly the stretch where the piece is fully up and
+            * the stage is asking for nothing else.
+            *
+            * The verb follows the pointer: there is no click on a phone.
+            */}
+          <span
+            data-engine="reel-cue-c"
+            className="engine-driven absolute flex items-center gap-2.5 whitespace-nowrap text-label text-[#141210] opacity-0"
+            suppressHydrationWarning
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" aria-hidden>
+              {/* a press: the mark and the ring it sends out */}
+              <circle cx="7.5" cy="7.5" r="2.1" fill="currentColor" />
+              <circle
+                cx="7.5"
+                cy="7.5"
+                r="5.6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.1"
+                opacity="0.5"
+              />
+            </svg>
+            <span className="max-[899px]:hidden">CLICK THE MASK</span>
+            <span className="min-[900px]:hidden">TAP THE MASK</span>
+          </span>
           <span
             data-engine="reel-cue-b"
             className="engine-driven absolute flex items-center gap-3 whitespace-nowrap text-label text-[#141210] opacity-0"

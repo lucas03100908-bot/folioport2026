@@ -41,6 +41,7 @@ export type EngineNodes = {
   reelPoster: HTMLElement | null;
   reelCueA: HTMLElement | null;
   reelCueB: HTMLElement | null;
+  reelCueC: HTMLElement | null;
 
   /* connect */
   connectWords: HTMLElement[];
@@ -67,6 +68,7 @@ export const EMPTY_NODES: EngineNodes = {
   reelPoster: null,
   reelCueA: null,
   reelCueB: null,
+  reelCueC: null,
   connectWords: [],
   progressBar: null,
   railTicks: [],
@@ -103,6 +105,7 @@ export function collectNodes(): EngineNodes {
     reelPoster: one('[data-engine="reel-poster"]'),
     reelCueA: one('[data-engine="reel-cue-a"]'),
     reelCueB: one('[data-engine="reel-cue-b"]'),
+    reelCueC: one('[data-engine="reel-cue-c"]'),
 
     connectWords: all('[data-engine="connect-word"]'),
 

@@ -161,6 +161,8 @@ A projection booth palette: black, three greys of house light, and one ember.
 Each role is a Tailwind utility (`text-display-2`, `text-label`, …) that sets size, leading, tracking and weight together. The `.display` and `.eyebrow` classes live in `@layer components`, so a utility on the same element always wins.
 
 ### Named Rules
+**The Spent Cue Rule.** One cue line, and it says the one thing to do next. While a screen holds something that can be acted on, the line names that and not the way out — "click the mask" over "keep scrolling", because a visitor told to scroll will scroll past the only interactive object on the page. The verb follows the pointer: click on a mouse, tap on a touch screen. The moment the thing has been done the cue is struck for good, eased rather than cut, and the line goes back to saying what is next — an instruction that stays up after it has been followed stops being an instruction and becomes something to look past. A cue for an interaction that reduced motion disables is never shown at all.
+
 **The Credit Rule.** Small spaced capitals credit the work: who, what, when. They sit beside or below a title, never above it as a kicker. A heading carries its own weight.
 
 **The Mono-Is-Data Rule.** Monospace is for numerals and measured values only: counters, percentages, counts, spec values. A word in mono is a costume, so words use Label.
