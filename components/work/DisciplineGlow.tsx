@@ -34,8 +34,14 @@ const VS = `attribute vec2 p;
 varying vec2 vUv;
 void main(){ vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
 
-/** iterations of the reference's distortion loop */
-const DISTORTION = 5;
+/**
+ * Iterations of the reference's distortion loop. Seven rather than its five:
+ * each turn folds the field again, and the extra two are what make it
+ * reorganise as it moves instead of sliding past in one piece. It is a
+ * full-screen loop, so it is also the one number here with a real cost —
+ * measured at DPR 1 it does not move the frame rate.
+ */
+const DISTORTION = 7;
 
 const FS = `precision highp float;
 
@@ -217,20 +223,29 @@ export default function DisciplineGlow({
     const uB = u("uColorB");
     const uC = u("uColorC");
 
-    /* The reference's numbers, with both clocks at two and a half times its
-       speed. The first pass ran them at a third, on the theory that a
-       background behind a page being read should be calmer than a demo
-       filling the screen — at which point the field stopped reading as
-       moving at all, which is the one thing this effect is for. The two to
-       change together are `uSpeed`, which drives the distortion loop, and
-       `uWaveSpeed`, which drives the water underneath it; moving one alone
-       slides the two apart and the field starts to shear. */
-    gl.uniform1f(u("uSwirl"), 0.5);
+    /*
+     * The reference's numbers, opened up.
+     *
+     * The two clocks run at two and a half times its speed, and they move
+     * together: `uSpeed` drives the distortion loop and `uWaveSpeed` the
+     * water underneath it, and changing either alone slides the two apart
+     * until the field shears.
+     *
+     * Past that, more life comes from how far the field deforms rather than
+     * from how fast it travels — speed alone turns a background into
+     * something that has to be ignored, which is the opposite of the brief.
+     * So the swell is twice the reference's and set longer (`uWaveAmp` up,
+     * `uWaveFreq` down): the same water, moving in larger bodies rather than
+     * in more ripples. The swirl is up for the curl it puts in the flow, and
+     * the loop runs two extra turns for structure that reorganises as it
+     * goes instead of sliding past in one piece.
+     */
+    gl.uniform1f(u("uSwirl"), 0.85);
     gl.uniform1f(u("uSpeed"), 2.25);
-    gl.uniform1f(u("uScale"), 1);
+    gl.uniform1f(u("uScale"), 1.1);
     gl.uniform1f(u("uRotation"), 90);
-    gl.uniform1f(u("uWaveAmp"), 0.1);
-    gl.uniform1f(u("uWaveFreq"), 10);
+    gl.uniform1f(u("uWaveAmp"), 0.21);
+    gl.uniform1f(u("uWaveFreq"), 6.5);
     gl.uniform1f(u("uWaveSpeed"), 0.5);
     gl.uniform1f(u("uGrain"), 0.06);
 
