@@ -101,7 +101,11 @@ export default function WorkStage() {
           />
         )}
 
-        <header className="work-head shrink-0 px-gutter pt-[calc(var(--nav-h)+4vh)]">
+        {/* `relative z-10` on all three, because the glow behind them is a
+            positioned layer and in-flow siblings would otherwise paint under
+            it. The glow is not given a negative z-index to get the same
+            result: at -10 it fell behind the stage itself and never showed. */}
+        <header className="work-head relative z-10 shrink-0 px-gutter pt-[calc(var(--nav-h)+4vh)]">
           <div className="mx-auto w-full max-w-page">
             {isOpen ? (
               <>
@@ -137,7 +141,7 @@ export default function WorkStage() {
           </div>
         </header>
 
-        <div key={category} className="min-h-0 flex-1">
+        <div key={category} className="relative z-10 min-h-0 flex-1">
           <RulerCarousel
             items={items}
             /* Not "View Project": that is what the *panel's* button does,
@@ -153,7 +157,7 @@ export default function WorkStage() {
           />
         </div>
 
-        <p className="work-cue pointer-events-none shrink-0 pb-safe-[1.75rem] text-center text-label text-muted md:text-faint">
+        <p className="work-cue pointer-events-none relative z-10 shrink-0 pb-safe-[1.75rem] text-center text-label text-muted md:text-faint">
           {/* the gesture differs by pointer, so the cue has to as well */}
           <span className="max-[899px]:hidden">SCROLL TO BROWSE</span>
           <span className="min-[900px]:hidden">SWIPE TO BROWSE</span>
