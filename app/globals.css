@@ -852,20 +852,29 @@ header span {
  * are the two strips the glow never reaches.
  */
 .disc-glow-field {
-  --disc-glow-top: calc(var(--nav-h) + 2.5rem);
-  --disc-glow-bottom: 7rem;
+  /* Both bands are held fully clear before the ramp begins, rather than the
+     ramp starting at the edge of the screen: a gradient that starts at 0
+     still lets a sixth of the field through the middle of the nav, which was
+     enough to put the dim counts under the floor once the pool widened. */
+  --disc-glow-top: calc(var(--nav-h) + 3rem);
+  --disc-glow-bottom: 11rem;
+  --disc-glow-bottom-clear: 6rem;
   mask-image: linear-gradient(
     to bottom,
     transparent 0,
+    transparent var(--nav-h),
     #000 var(--disc-glow-top),
     #000 calc(100% - var(--disc-glow-bottom)),
+    transparent calc(100% - var(--disc-glow-bottom-clear)),
     transparent 100%
   );
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0,
+    transparent var(--nav-h),
     #000 var(--disc-glow-top),
     #000 calc(100% - var(--disc-glow-bottom)),
+    transparent calc(100% - var(--disc-glow-bottom-clear)),
     transparent 100%
   );
 }
@@ -880,16 +889,16 @@ header span {
  */
 .disc-glow-pool {
   mask-image: radial-gradient(
-    ellipse 74% 60% at 50% 52%,
+    ellipse 84% 70% at 50% 52%,
     #000 0%,
-    #000 18%,
-    transparent 82%
+    #000 22%,
+    transparent 86%
   );
   -webkit-mask-image: radial-gradient(
-    ellipse 74% 60% at 50% 52%,
+    ellipse 84% 70% at 50% 52%,
     #000 0%,
-    #000 18%,
-    transparent 82%
+    #000 22%,
+    transparent 86%
   );
 }
 
@@ -907,5 +916,5 @@ header span {
   transition: opacity var(--dur-scene) var(--ease-dissolve);
 }
 .disc-glow-canvas[data-lit="1"] {
-  opacity: 0.55;
+  opacity: 0.72;
 }

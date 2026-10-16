@@ -217,15 +217,21 @@ export default function DisciplineGlow({
     const uB = u("uColorB");
     const uC = u("uColorC");
 
+    /* The reference's numbers, with both clocks at two and a half times its
+       speed. The first pass ran them at a third, on the theory that a
+       background behind a page being read should be calmer than a demo
+       filling the screen — at which point the field stopped reading as
+       moving at all, which is the one thing this effect is for. The two to
+       change together are `uSpeed`, which drives the distortion loop, and
+       `uWaveSpeed`, which drives the water underneath it; moving one alone
+       slides the two apart and the field starts to shear. */
     gl.uniform1f(u("uSwirl"), 0.5);
-    /* Slower than the reference's 1.0 and 0.2: this sits behind a page that
-       is being read, where the reference was the whole screen. */
-    gl.uniform1f(u("uSpeed"), 0.34);
-    gl.uniform1f(u("uScale"), 1.15);
+    gl.uniform1f(u("uSpeed"), 2.25);
+    gl.uniform1f(u("uScale"), 1);
     gl.uniform1f(u("uRotation"), 90);
     gl.uniform1f(u("uWaveAmp"), 0.1);
     gl.uniform1f(u("uWaveFreq"), 10);
-    gl.uniform1f(u("uWaveSpeed"), 0.18);
+    gl.uniform1f(u("uWaveSpeed"), 0.5);
     gl.uniform1f(u("uGrain"), 0.06);
 
     /* A background does not need the device's pixels. At DPR 1 this is a
