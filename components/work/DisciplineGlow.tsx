@@ -34,6 +34,27 @@ const VS = `attribute vec2 p;
 varying vec2 vUv;
 void main(){ vUv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }`;
 
+/** how far the swirl winds at rest, and how far either side of that it goes */
+const SWIRL = 0.85;
+const SWIRL_SWING = 0.42;
+/** radians of phase per second of the clock — one turn takes about a minute */
+const SWIRL_RATE = 0.13;
+/**
+ * Extra rate the instant a card is lit, and the seconds it decays over.
+ *
+ * The fall is long on purpose. The layer's own fade takes most of a second,
+ * so a surge that is spent inside half of one is spent while the field is
+ * still arriving and nobody sees it: at 0.55s it had already dropped to a
+ * third by the time there was anything on screen to watch. At 1.1s the
+ * field is still running at about twice its rate when the fade lands, and
+ * takes another three seconds to settle.
+ */
+const SURGE = 2.6;
+const SURGE_FALL = 1.1;
+/** how far the settled rate swells either side of one, and how often */
+const SWELL = 0.55;
+const SWELL_RATE = 0.22;
+
 /**
  * Iterations of the reference's distortion loop. Seven rather than its five:
  * each turn folds the field again, and the extra two are what make it
@@ -222,6 +243,8 @@ export default function DisciplineGlow({
     const uA = u("uColorA");
     const uB = u("uColorB");
     const uC = u("uColorC");
+    /* The one shape uniform written per frame rather than once. */
+    const uSwirl = u("uSwirl");
 
     /*
      * The reference's numbers, opened up.
@@ -240,7 +263,7 @@ export default function DisciplineGlow({
      * the loop runs two extra turns for structure that reorganises as it
      * goes instead of sliding past in one piece.
      */
-    gl.uniform1f(u("uSwirl"), 0.85);
+    gl.uniform1f(uSwirl, SWIRL);
     gl.uniform1f(u("uSpeed"), 2.25);
     gl.uniform1f(u("uScale"), 1.1);
     gl.uniform1f(u("uRotation"), 90);
@@ -274,6 +297,9 @@ export default function DisciplineGlow({
        fade is still playing, and stopping mid-fade freezes a half-lit field
        on screen. */
     let idle = 0;
+    /* Seconds since the light arrived, for the surge. */
+    let since = 0;
+    let wasAwake = false;
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
@@ -284,7 +310,32 @@ export default function DisciplineGlow({
       else idle += dt;
       if (!awake.current && idle > 1.4) return;
 
-      if (!reduced) clock += dt;
+      if (awake.current && !wasAwake) since = 0;
+      wasAwake = awake.current;
+      since += dt;
+
+      /*
+       * The clock does not run at a constant rate, and that is where the
+       * rest of the life in this comes from. Raising the speed any further
+       * buys movement at the price of a background that has to be ignored;
+       * varying it buys movement for nothing.
+       *
+       * Two terms. The surge spends the energy where it is worth spending:
+       * the field breaks fast under the pointer the instant a card is lit
+       * and settles within a second and a half, so the arrival is the
+       * dynamic part and what you then read against is calm. The swell
+       * underneath keeps the settled state from being metronomic — a flow
+       * that advances at exactly one rate stops reading as water within a
+       * few seconds of watching it.
+       */
+      const surge = 1 + SURGE * Math.exp(-since / SURGE_FALL);
+      const swell = 1 + SWELL * Math.sin(clock * SWELL_RATE);
+      if (!reduced) clock += dt * surge * swell;
+
+      /* Curl, on its own much slower clock: the field alternately winds up
+         and opens out over about a minute, which is the slowest thing in
+         here and the reason it does not read as a loop. */
+      gl.uniform1f(uSwirl, SWIRL + SWIRL_SWING * Math.sin(clock * SWIRL_RATE));
 
       /* Chased rather than cut: moving between cards walks the ramp across
          instead of swapping it, which on a field this large is the
